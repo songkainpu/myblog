@@ -1,0 +1,58 @@
+baseURL = "https://example.org/"
+languageCode = "zh-cn"
+title = "Song Kai's Blog"
+theme = "PaperMod"
+
+enableRobotsTXT = true
+enableEmoji = true
+hasCJKLanguage = true
+
+[pagination]
+  pagerSize = 10
+
+[params]
+  env = "production"
+  description = "记录技术、思考与生活"
+  author = "Song Kai"
+  defaultTheme = "auto"
+  ShowReadingTime = true
+  ShowShareButtons = true
+  ShowPostNavLinks = true
+  ShowBreadCrumbs = true
+  ShowCodeCopyButtons = true
+  ShowToc = true
+  TocOpen = false
+
+  [params.homeInfoParams]
+    Title = "Hi 👋"
+    Content = "欢迎来到我的博客，这里会记录我的技术探索与日常思考。"
+
+  [[params.socialIcons]]
+    name = "github"
+    url = "https://github.com/songkainpu"
+
+[menu]
+  [[menu.main]]
+    identifier = "posts"
+    name = "文章"
+    url = "/posts/"
+    weight = 10
+  [[menu.main]]
+    identifier = "archives"
+    name = "归档"
+    url = "/archives/"
+    weight = 20
+  [[menu.main]]
+    identifier = "tags"
+    name = "标签"
+    url = "/tags/"
+    weight = 30
+
+[markup.highlight]
+  style = "github-dark"
+  lineNos = false
+  codeFences = true
+  guessSyntax = true
+
+[markup.goldmark.renderer]
+  unsafe = true
