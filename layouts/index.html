@@ -1,0 +1,150 @@
+{{ define "main" }}
+{{- $posts := where site.RegularPages "Section" "posts" -}}
+{{- $sortedPosts := sort $posts "Date" "desc" -}}
+{{- $latestPosts := first 4 $sortedPosts -}}
+{{- $postCount := len $posts -}}
+{{- $tagCount := len site.Taxonomies.tags -}}
+{{- $categoryCount := len site.Taxonomies.categories -}}
+
+<div class="home-shell">
+  <section class="home-hero">
+    <div class="home-hero__layout">
+      <div class="home-hero__copy">
+        <p class="home-kicker">Song Kai's Blog</p>
+        <h1>把技术问题写成能长期回头翻的笔记</h1>
+        <p class="home-lead">
+          {{ site.Params.description }} 我会把 AI 自动化测试、CDN / 安全边界和算法笔记拆开写清楚，尽量留下可以直接复用的判断框架，而不是只记结论。
+        </p>
+
+        <div class="home-actions">
+          <a class="button" href="{{ "/posts/" | relURL }}">查看文章</a>
+          <a class="button button--ghost" href="{{ "/archives/" | relURL }}">看归档</a>
+          <a class="button button--ghost" href="{{ "/tags/" | relURL }}">浏览标签</a>
+          <a class="button button--ghost" href="https://github.com/songkainpu" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+
+        <div class="home-stats" aria-label="站点概览">
+          <div class="home-stat">
+            <strong>{{ $postCount }}</strong>
+            <span>篇文章</span>
+          </div>
+          <div class="home-stat">
+            <strong>{{ $tagCount }}</strong>
+            <span>个标签</span>
+          </div>
+          <div class="home-stat">
+            <strong>{{ $categoryCount }}</strong>
+            <span>个分类</span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="home-hero__panel">
+        <p class="home-panel__label">写作重点</p>
+        <div class="home-focus-list">
+          <article class="home-focus-card">
+            <span class="home-focus-card__index">01</span>
+            <div>
+              <h2>AI + LLM 自动化测试</h2>
+              <p>视觉、RAG、DOM / 对象树三种思路的边界和组合方式。</p>
+            </div>
+          </article>
+          <article class="home-focus-card">
+            <span class="home-focus-card__index">02</span>
+            <div>
+              <h2>CDN / 安全边界</h2>
+              <p>CloudFront、Cloudflare 和回源 Header 的真实信任边界。</p>
+            </div>
+          </article>
+          <article class="home-focus-card">
+            <span class="home-focus-card__index">03</span>
+            <div>
+              <h2>算法与数据结构</h2>
+              <p>把线段树、树状数组、动态规划写成可直接复用的模板。</p>
+            </div>
+          </article>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <div class="home-section__head">
+      <div>
+        <p class="home-section__eyebrow">Latest</p>
+        <h2 class="home-section__title">最近文章</h2>
+      </div>
+      <a class="home-section__link" href="{{ "/posts/" | relURL }}">查看全部</a>
+    </div>
+
+    <div class="home-post-grid">
+      {{ range $index, $page := $latestPosts }}
+      <article class="home-post-card{{ if eq $index 0 }} home-post-card--featured{{ end }}">
+        <div class="home-post-card__meta">
+          <span>{{ $page.Date.Format "2006-01-02" }}</span>
+          <span>{{ $page.ReadingTime }} 分钟</span>
+        </div>
+        <h3 class="home-post-card__title">
+          <a href="{{ $page.RelPermalink }}">{{ $page.Title }}</a>
+        </h3>
+        <p class="home-post-card__summary">
+          {{ $page.Summary | plainify | htmlUnescape }}
+        </p>
+        {{ with $page.Params.tags }}
+        <div class="home-post-card__tags" aria-label="文章标签">
+          {{ range first 3 . }}
+          <a class="tag-pill" href="{{ printf "/tags/%s/" (. | urlize) | relURL }}">{{ . }}</a>
+          {{ end }}
+        </div>
+        {{ end }}
+      </article>
+      {{ end }}
+    </div>
+  </section>
+
+  <section class="home-section">
+    <div class="home-section__head">
+      <div>
+        <p class="home-section__eyebrow">Tracks</p>
+        <h2 class="home-section__title">正在关注的主题</h2>
+      </div>
+    </div>
+
+    <div class="home-topic-grid">
+      <a class="home-topic-card" href="{{ "/posts/ai-llm-ui-automation-three-approaches/" | relURL }}">
+        <span class="home-topic-card__badge">AI</span>
+        <h3>LLM UI 自动化</h3>
+        <p>视觉、RAG 和对象树三条路线怎么组合，哪些地方该兜底，哪些地方该直接放弃。</p>
+        <span class="home-topic-card__link">阅读相关文章</span>
+      </a>
+      <a class="home-topic-card" href="{{ "/posts/cloudfront-cloudflare-geo-headers-security/" | relURL }}">
+        <span class="home-topic-card__badge">Security</span>
+        <h3>CDN 回源边界</h3>
+        <p>CloudFront 和 Cloudflare 的 Header 到底能不能信，关键看源站是否真的只接收 CDN 流量。</p>
+        <span class="home-topic-card__link">阅读相关文章</span>
+      </a>
+      <a class="home-topic-card" href="{{ "/posts/segment-tree-notes/" | relURL }}">
+        <span class="home-topic-card__badge">Algo</span>
+        <h3>线段树与区间维护</h3>
+        <p>标准线段树、数组实现、单点修改和区间查询，先把这个基础模板写扎实。</p>
+        <span class="home-topic-card__link">阅读相关文章</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="home-section">
+    <div class="home-section__head">
+      <div>
+        <p class="home-section__eyebrow">Tags</p>
+        <h2 class="home-section__title">标签速览</h2>
+      </div>
+    </div>
+
+    <div class="home-tag-cloud">
+      {{ range first 8 site.Taxonomies.tags.ByCount }}
+      <a class="home-tag-chip" href="{{ .Page.RelPermalink }}">{{ .Page.Title }}</a>
+      {{ end }}
+    </div>
+  </section>
+</div>
+{{ end }}
