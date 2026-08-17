@@ -287,22 +287,6 @@ bgc_after_sync_stage_before_commit_stage
 | `AFTER_SYNC` 等待 ACK | 会 | **会，而且很直接** |
 | Commit queue/线程调度 | 会 | **会** |
 
-## 为什么不是“数据页还没刷盘”
-
-InnoDB 的正常写入过程是：
-
-![InnoDB 事务可见性与脏页后台刷盘相互独立的流程](/images/posts/mysql-binlog-canal-visibility-window/05-innodb-visibility.png)
-
-数据页是否已经写回表空间，与事务是否对其他会话可见不是同一个条件：
-
-- DML 执行时，修改已经进入 Buffer Pool；
-- 未提交时不可见，是因为 MVCC 和事务状态，而不是内存页仍然是旧的；
-- commit 完成后，即使脏页尚未刷盘，查询也可以从 Buffer Pool 读取已提交版本；
-- `innodb_flush_log_at_trx_commit` 控制 Redo 持久性，不是查询可见性开关；
-- `sync_binlog` 控制 Binlog fsync，不保证 Dump 晚于 InnoDB commit。
-
-除非使用带独立计算节点、远端存储和多级页缓存的特殊数据库架构，否则“数据页没刷盘导致同一台原生 MySQL 主库查不到”并不是合理解释。
-
 ## 线上如何确认
 
 最有价值的证据，是把 Canal 收到时间、GTID 和主库提交状态放进同一条链路日志。
