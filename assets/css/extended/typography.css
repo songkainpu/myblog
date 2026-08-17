@@ -1,0 +1,42 @@
+/* Keep PaperMod's type scale, with a slightly quieter overall reading size. */
+body {
+  font-size: 17px;
+}
+
+.post-title,
+.page-header h1,
+.md-content h1 {
+  font-size: 36px;
+}
+
+.md-content h2 {
+  font-size: 29px;
+}
+
+.md-content h3 {
+  font-size: 22px;
+}
+
+.home-hero h1 {
+  font-size: clamp(2.2rem, 4.6vw, 4.25rem);
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 16px;
+  }
+
+  .post-title,
+  .page-header h1,
+  .md-content h1 {
+    font-size: 32px;
+  }
+
+  .md-content h2 {
+    font-size: 26px;
+  }
+
+  .md-content h3 {
+    font-size: 21px;
+  }
+}

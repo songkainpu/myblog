@@ -1,0 +1,133 @@
+.cn-share {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--code-bg);
+}
+
+.cn-share__label {
+  margin-right: 0.2rem;
+  color: var(--secondary);
+  font-size: 0.82rem;
+}
+
+.cn-share__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--primary);
+  background: var(--theme);
+  font-size: 0.84rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.cn-share__button:hover {
+  transform: translateY(-1px);
+  border-color: var(--secondary);
+}
+
+.cn-share__button svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  fill: currentColor;
+}
+
+.cn-share__button--wechat svg {
+  color: #07c160;
+}
+
+.cn-share__button--qq svg {
+  color: #12b7f5;
+}
+
+.wechat-share-dialog {
+  width: min(24rem, calc(100vw - 2rem));
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--primary);
+  background: var(--theme);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.24);
+  text-align: center;
+}
+
+.wechat-share-dialog::backdrop {
+  background: rgba(2, 6, 23, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.wechat-share-dialog__close {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.85rem;
+  width: 2rem;
+  height: 2rem;
+  color: var(--secondary);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wechat-share-dialog__eyebrow {
+  color: #07c160;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.wechat-share-dialog h2 {
+  margin: 0.25rem 0 1rem;
+  font-size: 1.3rem;
+}
+
+.wechat-share-dialog__qr {
+  display: grid;
+  place-items: center;
+  width: 244px;
+  min-height: 244px;
+  margin: 0 auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  color: var(--secondary);
+  background: #fff;
+  font-size: 0.8rem;
+}
+
+.wechat-share-dialog__qr img {
+  width: 220px;
+  height: 220px;
+  border-radius: 8px;
+}
+
+.wechat-share-dialog__hint {
+  margin: 0.85rem 0;
+  color: var(--secondary);
+  font-size: 0.8rem;
+}
+
+.wechat-share-dialog__copy {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  color: white;
+  background: #07c160;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 420px) {
+  .cn-share__label {
+    display: none;
+  }
+}
