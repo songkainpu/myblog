@@ -16,7 +16,7 @@ categories: ["技术"]
 
 > 源码基线：MySQL 8.0.46、Canal `87be50e`
 
-## TL;DR
+## 核心结论
 
 MySQL 提交事务时，会先将包含 XID 的完整事务写入并发布到 Binlog，再进入 InnoDB engine commit。Binlog Dump 线程只关心新的 Binlog end position，不会等待 InnoDB commit，因此可能先把事务发给 Canal。
 
