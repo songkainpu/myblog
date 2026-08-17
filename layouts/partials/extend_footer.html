@@ -1,0 +1,136 @@
+<canvas class="ambient-canvas" aria-hidden="true"></canvas>
+<div class="ambient-grain" aria-hidden="true"></div>
+<div class="ambient-cursor" aria-hidden="true"></div>
+
+<script>
+(() => {
+  const canvas = document.querySelector('.ambient-canvas');
+  const cursor = document.querySelector('.ambient-cursor');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (!canvas || !cursor || reducedMotion.matches) return;
+
+  const ctx = canvas.getContext('2d', { alpha: true });
+  const pointer = { x: -1000, y: -1000, active: false };
+  let width = 0;
+  let height = 0;
+  let ratio = 1;
+  let nodes = [];
+  let frame = 0;
+  let colors = {};
+
+  const cssRgb = (name, fallback) => {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return raw || fallback;
+  };
+
+  const syncColors = () => {
+    colors = {
+      node: cssRgb('--ambient-ink', '37, 99, 235'),
+      accent: cssRgb('--ambient-accent', '13, 148, 136'),
+      line: cssRgb('--ambient-line', '71, 85, 105')
+    };
+  };
+
+  const createNode = () => ({
+    x: Math.random() * width,
+    y: Math.random() * height,
+    vx: (Math.random() - 0.5) * 0.18,
+    vy: (Math.random() - 0.5) * 0.18,
+    radius: Math.random() * 1.25 + 0.65,
+    phase: Math.random() * Math.PI * 2
+  });
+
+  const resize = () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    ratio = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(width * ratio);
+    canvas.height = Math.round(height * ratio);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    const density = window.matchMedia('(pointer: coarse)').matches ? 22000 : 14500;
+    const count = Math.max(28, Math.min(92, Math.round((width * height) / density)));
+    nodes = Array.from({ length: count }, createNode);
+    syncColors();
+  };
+
+  const movePointer = (event) => {
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+    pointer.active = true;
+    document.body.classList.add('is-pointer-active');
+    cursor.style.setProperty('--cursor-x', `${pointer.x}px`);
+    cursor.style.setProperty('--cursor-y', `${pointer.y}px`);
+  };
+
+  const leavePointer = () => {
+    pointer.active = false;
+    document.body.classList.remove('is-pointer-active');
+  };
+
+  const draw = (time) => {
+    ctx.clearRect(0, 0, width, height);
+
+    for (let i = 0; i < nodes.length; i += 1) {
+      const node = nodes[i];
+      if (pointer.active) {
+        const dx = node.x - pointer.x;
+        const dy = node.y - pointer.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance < 150 && distance > 0) {
+          const force = (1 - distance / 150) * 0.024;
+          node.vx += (dx / distance) * force;
+          node.vy += (dy / distance) * force;
+        }
+      }
+
+      node.vx *= 0.992;
+      node.vy *= 0.992;
+      node.x += node.vx + Math.sin(time * 0.00022 + node.phase) * 0.035;
+      node.y += node.vy + Math.cos(time * 0.00018 + node.phase) * 0.035;
+
+      if (node.x < -10) node.x = width + 10;
+      if (node.x > width + 10) node.x = -10;
+      if (node.y < -10) node.y = height + 10;
+      if (node.y > height + 10) node.y = -10;
+
+      const pulse = 0.48 + Math.sin(time * 0.001 + node.phase) * 0.16;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${i % 5 === 0 ? colors.accent : colors.node}, ${pulse})`;
+      ctx.fill();
+
+      for (let j = i + 1; j < nodes.length; j += 1) {
+        const other = nodes[j];
+        const dx = node.x - other.x;
+        const dy = node.y - other.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance < 112) {
+          ctx.beginPath();
+          ctx.moveTo(node.x, node.y);
+          ctx.lineTo(other.x, other.y);
+          ctx.strokeStyle = `rgba(${colors.line}, ${(1 - distance / 112) * 0.13})`;
+          ctx.lineWidth = 0.65;
+          ctx.stroke();
+        }
+      }
+    }
+
+    frame = requestAnimationFrame(draw);
+  };
+
+  const themeObserver = new MutationObserver(syncColors);
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  window.addEventListener('resize', resize, { passive: true });
+  window.addEventListener('pointermove', movePointer, { passive: true });
+  document.documentElement.addEventListener('pointerleave', leavePointer);
+  document.addEventListener('visibilitychange', () => {
+    cancelAnimationFrame(frame);
+    if (!document.hidden) frame = requestAnimationFrame(draw);
+  });
+
+  resize();
+  frame = requestAnimationFrame(draw);
+})();
+</script>
