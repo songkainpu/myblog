@@ -49,8 +49,10 @@
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const density = window.matchMedia('(pointer: coarse)').matches ? 22000 : 14500;
-    const count = Math.max(28, Math.min(92, Math.round((width * height) / density)));
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    const density = coarsePointer ? 14500 : 8200;
+    const maxNodes = coarsePointer ? 82 : 150;
+    const count = Math.max(42, Math.min(maxNodes, Math.round((width * height) / density)));
     nodes = Array.from({ length: count }, createNode);
     syncColors();
   };
