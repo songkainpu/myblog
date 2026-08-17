@@ -1,0 +1,10 @@
+flowchart TD
+    A["Canal 收到消息，主库查空"] --> B{"消息含 XID/事务结束吗？"}
+    B -->|否| C["检查拆事务或提前投递"]
+    B -->|是| D{"查询 server_uuid 与事件来源一致吗？"}
+    D -->|否| E["检查代理、切换和分片路由"]
+    D -->|是| F{"GTID 已进入 gtid_executed 吗？"}
+    F -->|否| G["Binlog 发布早于 engine commit"]
+    F -->|是| H{"查询使用新的 Read View 吗？"}
+    H -->|否| I["旧 RR 快照"]
+    H -->|是| J["检查查询条件、后续 DELETE 和乱序"]

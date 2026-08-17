@@ -1,0 +1,7 @@
+flowchart LR
+    A["业务事务写入并 COMMIT"] --> B["MySQL Binlog"]
+    B --> C["Canal"]
+    C --> D["MQ"]
+    D --> E["消费者回查主库"]
+    E --> F{"能查到吗？"}
+    F -->|偶发| G["第一次为空，稍后存在"]

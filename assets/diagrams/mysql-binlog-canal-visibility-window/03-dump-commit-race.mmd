@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant T as 提交线程
+    participant L as Binary Log
+    participant D as Dump/Canal
+    participant I as InnoDB
+    T->>L: FLUSH/SYNC 完整事务
+    T->>L: 发布 binlog_end_pos
+    par Dump 链路
+        L-->>D: 发送 Row Event + XID
+    and 提交链路
+        T->>I: engine commit
+    end

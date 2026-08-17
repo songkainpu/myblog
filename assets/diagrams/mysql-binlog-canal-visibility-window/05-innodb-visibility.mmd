@@ -1,0 +1,6 @@
+flowchart LR
+    A["修改 Buffer Pool 中的记录"] --> B["生成 Undo 和 Redo"]
+    B --> C["未提交版本由 MVCC 隐藏"]
+    C --> D["COMMIT 更新事务状态"]
+    D --> E["新 Read View 可见"]
+    D --> F["脏页随后后台刷盘"]

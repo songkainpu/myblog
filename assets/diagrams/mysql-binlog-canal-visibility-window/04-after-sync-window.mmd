@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant M as MySQL
+    participant R as Replica/Canal
+    participant I as InnoDB
+    M->>M: FLUSH/SYNC Binlog
+    M-->>R: 发送完整事务
+    M->>M: 等待 ACK
+    R-->>M: ACK
+    M->>I: engine commit

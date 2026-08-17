@@ -1,0 +1,7 @@
+flowchart LR
+    A["FLUSH：写入完整事务"] --> B["SYNC：持久化 Binlog"]
+    B --> C["发布 binlog_end_pos"]
+    C --> D["Dump/Canal 可读取"]
+    C --> E["COMMIT Stage"]
+    E --> F["InnoDB engine commit"]
+    F --> G["新 Read View 可见"]

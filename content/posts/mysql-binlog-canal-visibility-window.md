@@ -31,15 +31,7 @@ MySQL 提交事务时，会先将包含 XID 的完整事务写入并发布到 Bi
 
 典型链路如下：
 
-```mermaid
-flowchart LR
-    A["业务事务写入并 COMMIT"] --> B["MySQL Binlog"]
-    B --> C["Canal"]
-    C --> D["MQ"]
-    D --> E["消费者回查主库"]
-    E --> F{"能查到吗？"}
-    F -->|偶发| G["第一次为空，稍后存在"]
-```
+![CDC 链路中消费者回查主库时偶发查空的典型流程](/images/posts/mysql-binlog-canal-visibility-window/01-cdc-query-race.png)
 
 在分析源码之前，先排除几类更常见的问题。
 
@@ -111,15 +103,7 @@ MYSQL_BIN_LOG::ordered_commit(...)
 
 当 `sync_binlog=1` 时，MySQL 在 sync 成功后更新 `binlog_end_pos`；当 `sync_binlog!=1` 时，通常在 flush 后发布新的 end position。无论走哪条路径，Binlog 的发布都可能发生在 engine commit 之前。
 
-```mermaid
-flowchart LR
-    A["FLUSH：写入完整事务"] --> B["SYNC：持久化 Binlog"]
-    B --> C["发布 binlog_end_pos"]
-    C --> D["Dump/Canal 可读取"]
-    C --> E["COMMIT Stage"]
-    E --> F["InnoDB engine commit"]
-    F --> G["新 Read View 可见"]
-```
+![MySQL ordered_commit 中 Binlog 发布与 InnoDB 可见性的先后关系](/images/posts/mysql-binlog-canal-visibility-window/02-ordered-commit-window.png)
 
 ### Dump 线程不等待 InnoDB commit
 
@@ -135,20 +119,7 @@ send_events(log_cache, end_pos);
 
 它判断的是“这段 Binlog 是否已发布为可读取”，而不是“生成这段 Binlog 的 InnoDB 事务是否已提交”。因此，在 `binlog_end_pos` 发布之后，Dump 线程和提交线程会并发推进：
 
-```mermaid
-sequenceDiagram
-    participant T as 提交线程
-    participant L as Binary Log
-    participant D as Dump/Canal
-    participant I as InnoDB
-    T->>L: FLUSH/SYNC 完整事务
-    T->>L: 发布 binlog_end_pos
-    par Dump 链路
-        L-->>D: 发送 Row Event + XID
-    and 提交链路
-        T->>I: engine commit
-    end
-```
+![Binlog 发布后 Dump 链路与 InnoDB 提交链路并发推进的时序](/images/posts/mysql-binlog-canal-visibility-window/03-dump-commit-race.png)
 
 谁先完成，取决于提交队列、线程调度、半同步等待、网络速度以及 Canal/MQ 的处理速度。
 
@@ -196,17 +167,7 @@ case TRANSACTIONEND:
 
 `AFTER_SYNC` 将 ACK 等待放在 Binlog sync 和 engine commit 之间：
 
-```mermaid
-sequenceDiagram
-    participant M as MySQL
-    participant R as Replica/Canal
-    participant I as InnoDB
-    M->>M: FLUSH/SYNC Binlog
-    M-->>R: 发送完整事务
-    M->>M: 等待 ACK
-    R-->>M: ACK
-    M->>I: engine commit
-```
+![半同步 AFTER_SYNC 在 Binlog 同步与 InnoDB 提交之间等待 ACK 的时序](/images/posts/mysql-binlog-canal-visibility-window/04-after-sync-window.png)
 
 网络 RTT、副本写入或 ACK 处理越慢，这个窗口就越长。这也是线上最容易观察、用 GDB 最容易稳定复现的模式。
 
@@ -330,14 +291,7 @@ bgc_after_sync_stage_before_commit_stage
 
 InnoDB 的正常写入过程是：
 
-```mermaid
-flowchart LR
-    A["修改 Buffer Pool 中的记录"] --> B["生成 Undo 和 Redo"]
-    B --> C["未提交版本由 MVCC 隐藏"]
-    C --> D["COMMIT 更新事务状态"]
-    D --> E["新 Read View 可见"]
-    D --> F["脏页随后后台刷盘"]
-```
+![InnoDB 事务可见性与脏页后台刷盘相互独立的流程](/images/posts/mysql-binlog-canal-visibility-window/05-innodb-visibility.png)
 
 数据页是否已经写回表空间，与事务是否对其他会话可见不是同一个条件：
 
@@ -403,18 +357,7 @@ SHOW GLOBAL STATUS LIKE 'Threads_running';
 
 排查顺序可以归纳为：
 
-```mermaid
-flowchart TD
-    A["Canal 收到消息，主库查空"] --> B{"消息含 XID/事务结束吗？"}
-    B -->|否| C["检查拆事务或提前投递"]
-    B -->|是| D{"查询 server_uuid 与事件来源一致吗？"}
-    D -->|否| E["检查代理、切换和分片路由"]
-    D -->|是| F{"GTID 已进入 gtid_executed 吗？"}
-    F -->|否| G["Binlog 发布早于 engine commit"]
-    F -->|是| H{"查询使用新的 Read View 吗？"}
-    H -->|否| I["旧 RR 快照"]
-    H -->|是| J["检查查询条件、后续 DELETE 和乱序"]
-```
+![Canal 已收到消息但主库查空时的线上排查流程](/images/posts/mysql-binlog-canal-visibility-window/06-troubleshooting-flow.png)
 
 ## 解决方案
 
