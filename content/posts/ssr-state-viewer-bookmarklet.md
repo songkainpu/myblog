@@ -13,7 +13,7 @@ SSR 页面常把首屏请求结果随 HTML 注入浏览器。遇到线上数据�
 
 SSR 应用的首屏请求通常在服务端完成，再把结果随 HTML 一起交给浏览器。不过，这份状态没有跨框架统一的名字或载体：
 
-- Vue SSR 项目可能挂在 `window.__INITIAL_STATE__`；
+- 自定义 Vue SSR 项目可能挂在 `window.__SSR_PAYLOAD__`；
 - Nuxt、Remix 等框架各有自己的全局对象；
 - Next.js 常把数据放在 `<script id="__NEXT_DATA__" type="application/json">` 中；
 - 业务项目还可能使用完全自定义的变量名、嵌套路径或 JSON Script ID。
@@ -24,7 +24,7 @@ SSR 应用的首屏请求通常在服务端完成，再把结果随 HTML 一起�
 
 ## 从“能打印”到“真正好用”
 
-实现时发现 `__INITIAL_STATE__` 并不是一个简单纯 JSON 对象，逐层踩坑并改进：
+实现时发现注入的 SSR 状态并不一定是简单的纯 JSON 对象，逐层踩坑并改进：
 
 1. **循环引用**：它是 Vue 3 响应式对象，内部 `ReactiveEffect / Link / Dep` 相互引用成环，直接 `JSON.stringify` 会抛 `Converting circular structure to JSON`。→ 改用带 `WeakSet` 记忆的防循环序列化，真正成环处标为 `[Circular]`。
 2. **响应式 / 类实例包裹太重**：展开后满屏 `ReactiveEffect / Route / Link / [Ref]`，业务数据被淹没。→ 增加递归「剥壳」：ref 打平取 `.value`、reactive/proxy 只枚举真实字段、原型非 `Object.prototype` 的类实例直接丢弃，只留纯业务数据。
@@ -74,14 +74,14 @@ SSR 应用的首屏请求通常在服务端完成，再把结果随 HTML 一起�
 支持三种写法：
 
 ```plaintext
-__INITIAL_STATE__
+__SSR_PAYLOAD__
 window.__NUXT__.data
 script#__NEXT_DATA__
 ```
 
-三行分别表示 `window` 顶层属性、`window` 嵌套路径和 JSON Script 元素 ID。
+三行分别表示 `window` 顶层属性、`window` 嵌套路径和 JSON Script 元素 ID。这里用 `__SSR_PAYLOAD__` 作为中性示例名。
 
-默认候选包括 `__INITIAL_STATE__`、`__NUXT__`、`__remixContext`、`__INITIAL_DATA__`、`__PRELOADED_STATE__`、`script#__NEXT_DATA__` 和 `script#__NUXT_DATA__`。
+默认候选仍包括真实项目常用的 `__INITIAL_STATE__`，以及 `__NUXT__`、`__remixContext`、`__INITIAL_DATA__`、`__PRELOADED_STATE__`、`script#__NEXT_DATA__` 和 `script#__NUXT_DATA__`。工具只读取命中的来源，不会覆盖或修改这些业务变量。
 
 > 框架升级也可能改变注入结构，因此候选列表只是开箱即用的默认值，不是框架识别规则。团队使用自定义来源时，建议把配置同步到项目调试文档。
 
