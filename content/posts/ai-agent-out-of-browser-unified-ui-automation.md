@@ -67,16 +67,7 @@ take_screenshot
 
 其中，Agent 最主要的工作循环是：
 
-```mermaid
-flowchart LR
-    A["打开设备会话"] --> B["获取可交互元素"]
-    B --> C["理解当前页面"]
-    C --> D["执行点击、输入或滚动"]
-    D --> E["截图或再次读取元素"]
-    E --> F{"目标是否完成"}
-    F -- "否" --> C
-    F -- "是" --> G["关闭会话"]
-```
+![Agent UI 自动化的观察—行动闭环](/images/ai-agent-unified-ui-automation-loop.svg)
 
 动作层同样采用统一语义，包括：
 
@@ -100,15 +91,7 @@ kill_app
 
 每个平台内部都被拆成四个主要部分：
 
-```mermaid
-flowchart TD
-    Agent["Skill / Agent"] --> MCP["单平台 MCP Server"]
-    MCP --> Manager["SessionManager"]
-    Manager --> Session["Raw Session"]
-    Manager --> Hierarchy["Hierarchy Adapter"]
-    Manager --> Executor["Action Executor"]
-    Manager --> Capture["Screen Capture"]
-```
+![单平台 MCP Server 的内部架构](/images/ai-agent-mcp-architecture.svg)
 
 ### SessionManager
 
@@ -363,15 +346,7 @@ stdio MCP 使用标准输出传输协议消息，而一些底层 SDK 会直接�
 
 我们所做的是在这些能力之上增加一层 Agent-friendly interface，让 Skill 可以把移动端和 Unity 应用纳入同一条需求产出链路：
 
-```mermaid
-flowchart LR
-    Requirement["理解需求"] --> Code["生成或修改代码"]
-    Code --> Build["构建并启动应用"]
-    Build --> Operate["Agent 操作真实 UI"]
-    Operate --> Verify["验证功能与视觉结果"]
-    Verify --> Report["输出结果或继续修复"]
-    Verify -- "未通过" --> Code
-```
+![AI Native 研发与交付闭环](/images/ai-agent-native-delivery-loop.svg)
 
 当 Agent 能够操作最终产物，自动化流程才从“代码生成”向“需求交付”迈进一步。
 

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-labelledby="title desc">
+<title id="title">Agent UI automation loop</title><desc id="desc">Open session, inspect elements, understand page, execute action, capture result, and decide whether the goal is complete.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L9,3 L0,6 Z" fill="#64748b"/></marker></defs>
+<rect width="1200" height="330" rx="20" fill="#f8fafc"/><g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" text-anchor="middle">
+<g fill="#fff" stroke="#2563eb" stroke-width="3"><rect x="35" y="120" width="145" height="68" rx="12"/><rect x="215" y="120" width="165" height="68" rx="12"/><rect x="415" y="120" width="145" height="68" rx="12"/><rect x="595" y="120" width="190" height="68" rx="12"/><rect x="820" y="120" width="165" height="68" rx="12"/></g>
+<g fill="#0f172a" font-size="20"><text x="107" y="148">打开设备</text><text x="107" y="175">会话</text><text x="297" y="148">获取可交互</text><text x="297" y="175">元素</text><text x="487" y="160">理解当前页面</text><text x="690" y="148">执行点击、输入</text><text x="690" y="175">或滚动</text><text x="902" y="148">截图 / 再次</text><text x="902" y="175">读取元素</text></g>
+<path d="M180 154h32M380 154h32M560 154h32M785 154h32" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M985 154h80" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/><path d="M1080 154v-88H487v50" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<path d="M1080 188v55H107v-55" fill="none" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+<g fill="#475569" font-size="17"><text x="1080" y="145">目标是否完成？</text><text x="780" y="274">否：重新观察</text><text x="1080" y="48">是：关闭会话</text></g></g></svg>
