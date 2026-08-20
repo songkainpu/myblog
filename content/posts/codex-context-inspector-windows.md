@@ -1,7 +1,7 @@
 ---
 title: "我给 Codex Desktop 做了一个 Context Inspector"
 date: 2026-08-20T00:00:00+08:00
-draft: true
+draft: false
 tags: ["Codex", "Context", "Windows", "插件", "WPF"]
 categories: ["技术"]
 ---
