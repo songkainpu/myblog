@@ -1,5 +1,5 @@
 ---
-title: "我给 Codex Desktop 做了一个 Context Inspector：从一个按钮到跨平台的 Context 可观测性"
+title: "给 Codex Desktop 加一个 Context 用量仪表盘：Windows 和 macOS 实现"
 date: 2026-08-20T00:00:00+08:00
 draft: false
 description: "为 Codex Desktop 提供 Windows 和 macOS 原生悬浮 Context Inspector，展示准确 Context 总量与带证据等级的本地估算。"
@@ -7,7 +7,7 @@ tags: ["Codex", "Context", "Windows", "macOS", "插件", "WPF", "AppKit"]
 categories: ["技术"]
 ---
 
-# 我给 Codex Desktop 做了一个 Context Inspector：从一个按钮到跨平台的 Context 可观测性
+# 给 Codex Desktop 加一个 Context 用量仪表盘：Windows 和 macOS 实现
 
 本文记录一个 Windows 和 macOS 本地实验项目：在 Codex Desktop 输入框附近持续显示当前 Context 使用情况，并进一步拆解 Skill、MCP server/tool、消息和工具结果的大致占用。
 
