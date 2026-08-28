@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 720" role="img" aria-labelledby="title desc">
+  <title id="title">Codex Context Inspector 跨平台架构</title>
+  <desc id="desc">Codex Desktop 通过 Windows UI Automation 或 macOS Accessibility 定位悬浮窗，同时通过 Desktop activity log、插件 Hook 和 rollout JSONL 读取并展示 Context。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#64748b"/>
+    </marker>
+    <style>
+      .bg{fill:#f8fafc}.title{font:700 28px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC",sans-serif;fill:#0f172a}.label{font:600 19px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC",sans-serif;fill:#0f172a}.small{font:500 15px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC",sans-serif;fill:#475569}.edge{stroke:#64748b;stroke-width:2.5;fill:none;marker-end:url(#arrow)}.node{stroke-width:2}.host{fill:#e0f2fe;stroke:#0284c7}.ui{fill:#ede9fe;stroke:#7c3aed}.data{fill:#dcfce7;stroke:#16a34a}.estimate{fill:#fef3c7;stroke:#d97706}.ipc{fill:#fce7f3;stroke:#db2777}.legend{font:500 14px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC",sans-serif;fill:#334155}
+    </style>
+  </defs>
+  <rect class="bg" width="1600" height="720" rx="24"/>
+  <text class="title" x="48" y="52">Codex Context Inspector：插件、桌面 sidecar 与本地会话数据</text>
+
+  <rect class="node host" x="48" y="235" width="235" height="92" rx="14"/>
+  <text class="label" x="165" y="272" text-anchor="middle">Codex Desktop</text>
+  <text class="small" x="165" y="298" text-anchor="middle">当前窗口与本地日志</text>
+
+  <rect class="node ui" x="350" y="130" width="270" height="82" rx="14"/>
+  <text class="label" x="485" y="164" text-anchor="middle">Windows UI Automation</text>
+  <text class="small" x="485" y="189" text-anchor="middle">查找窗口与 composer</text>
+  <rect class="node ui" x="350" y="260" width="270" height="82" rx="14"/>
+  <text class="label" x="485" y="294" text-anchor="middle">macOS Accessibility</text>
+  <text class="small" x="485" y="319" text-anchor="middle">AX + CGWindow 定位</text>
+  <path class="edge" d="M283 260L350 175"/>
+  <path class="edge" d="M283 290L350 300"/>
+
+  <rect class="node ui" x="715" y="195" width="290" height="100" rx="14"/>
+  <text class="label" x="860" y="235" text-anchor="middle">Native Overlay</text>
+  <text class="small" x="860" y="263" text-anchor="middle">WPF / AppKit pill + details</text>
+  <path class="edge" d="M620 171L715 235"/>
+  <path class="edge" d="M620 301L715 260"/>
+
+  <rect class="node data" x="350" y="485" width="270" height="82" rx="14"/>
+  <text class="label" x="485" y="519" text-anchor="middle">Desktop activity log</text>
+  <text class="small" x="485" y="544" text-anchor="middle">conversationId</text>
+  <rect class="node ipc" x="48" y="485" width="235" height="82" rx="14"/>
+  <text class="label" x="165" y="519" text-anchor="middle">Plugin Hooks</text>
+  <text class="small" x="165" y="544" text-anchor="middle">兼容路径 / 元数据</text>
+  <rect class="node data" x="715" y="460" width="290" height="82" rx="14"/>
+  <text class="label" x="860" y="494" text-anchor="middle">Session binding</text>
+  <text class="small" x="860" y="519" text-anchor="middle">窗口、task、session 对齐</text>
+  <path class="edge" d="M283 525L715 510"/>
+  <path class="edge" d="M620 526L715 510"/>
+  <path class="edge" d="M485 485L485 342"/>
+
+  <rect class="node data" x="1050" y="460" width="250" height="82" rx="14"/>
+  <text class="label" x="1175" y="494" text-anchor="middle">Rollout JSONL</text>
+  <text class="small" x="1175" y="519" text-anchor="middle">文件名 + session_meta.id</text>
+  <path class="edge" d="M1005 501L1050 501"/>
+
+  <rect class="node data" x="1335" y="255" width="215" height="72" rx="14"/>
+  <text class="label" x="1442" y="286" text-anchor="middle">Exact reader</text>
+  <text class="small" x="1442" y="310" text-anchor="middle">token_count</text>
+  <rect class="node estimate" x="1335" y="390" width="215" height="72" rx="14"/>
+  <text class="label" x="1442" y="421" text-anchor="middle">Attribution</text>
+  <text class="small" x="1442" y="445" text-anchor="middle">local estimate ≈</text>
+  <path class="edge" d="M1300 485L1335 291"/>
+  <path class="edge" d="M1300 520L1335 426"/>
+  <path class="edge" d="M1442 327L1442 390"/>
+
+  <rect class="node ipc" x="1050" y="185" width="250" height="72" rx="14"/>
+  <text class="label" x="1175" y="216" text-anchor="middle">IPC</text>
+  <text class="small" x="1175" y="240" text-anchor="middle">Named pipe / Unix socket</text>
+  <rect class="node ipc" x="1050" y="65" width="250" height="72" rx="14"/>
+  <text class="label" x="1175" y="96" text-anchor="middle">Context Usage Skill</text>
+  <text class="small" x="1175" y="120" text-anchor="middle">numeric report</text>
+  <path class="edge" d="M1005 245L1050 221"/>
+  <path class="edge" d="M1175 185L1175 137"/>
+  <path class="edge" d="M1005 485L1050 235"/>
+  <path class="edge" d="M1005 515L1050 235"/>
+
+  <rect x="48" y="635" width="18" height="18" rx="4" class="host"/><text class="legend" x="76" y="650">宿主 / 窗口</text>
+  <rect x="190" y="635" width="18" height="18" rx="4" class="data"/><text class="legend" x="218" y="650">本地准确证据</text>
+  <rect x="360" y="635" width="18" height="18" rx="4" class="estimate"/><text class="legend" x="388" y="650">本地估算</text>
+  <rect x="500" y="635" width="18" height="18" rx="4" class="ipc"/><text class="legend" x="528" y="650">本地 IPC</text>
+</svg>

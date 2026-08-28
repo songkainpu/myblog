@@ -121,20 +121,9 @@ macOS 版没有把 WPF 硬搬过去，而是使用 Swift + AppKit：
 
 整体关系可以简化为：
 
-```mermaid
-flowchart LR
-    CD[Codex Desktop] --> UIA[Windows UI Automation]
-    CD --> AX[macOS Accessibility + CGWindow]
-    UIA --> OW[Native Overlay<br/>WPF / AppKit]
-    AX --> OW
-    CD --> DL[Desktop activity log] --> SR[Session binding]
-    HK[Plugin Hooks] --> SR
-    SR --> RJ[Session rollout JSONL]
-    RJ --> UR[Exact usage reader] --> OW
-    RJ --> AR[Attribution estimator] --> OW
-    UR --> IPC[Named pipe / Unix socket] --> SK[Context usage Skill]
-    AR --> IPC
-```
+![Codex Context Inspector 跨平台架构图](/images/codex-context-inspector-architecture.svg)
+
+*跨平台实现共享同一套 Context 数据语义，平台差异集中在窗口定位、IPC 和 sidecar UI。*
 
 这个方案把插件能力和桌面 UI 解耦，侵入性较低，但也带来明确代价：UI Automation、Accessibility tree、Desktop activity log 和 rollout JSONL 都属于兼容面，宿主更新后可能需要适配。
 
@@ -222,46 +211,25 @@ scripts/install-personal-macos.sh
 
 这里的“macOS 支持”指的是当前仓库中的本地 sidecar 和插件安装链路已经实现，不代表 Codex Desktop 的本地 JSONL、Desktop activity log 或 Accessibility tree 已经成为稳定公开 API。
 
-## 真正最难的不是读 token，而是证明它属于当前 task
+## 当前 task 绑定：从窗口到 rollout 的实现
 
-原型最早在开发对话里工作正常，但切换到其他 task 后，Context 一直显示为 0 或空。
+Context Inspector 不扫描“最近修改的 JSONL”，而是先确定用户当前看到的 Codex 窗口，再把窗口信号解析成候选 `conversationId` 或 session 元数据。
 
-当时表面上所有东西都没问题：插件已经安装，Hooks 已启用，也完成了信任确认。真正有价值的证据来自诊断日志：能显示数据的 task 曾经被手动执行 `--hook` 完成绑定，而新 task 只有 `ui.unbound`，没有新的 `hook.received`。
+Windows 端通过 UI Automation 找到前台 Codex 窗口和 composer；macOS 端优先使用 `com.openai.codex` 的前台窗口、Accessibility focused window 和 `CGWindow` 信息。两端都只接受 active、focused、visible 的窗口，避免把后台 task 当成当前 task。
 
-也就是说，Overlay 没坏，token reader 也没坏；缺失的是“当前 UI task 对应哪个 session”的可靠绑定。
+当前版本的绑定步骤是：
 
-Windows 和 macOS 的具体入口不同，但排查顺序相同：
+1. **取得候选身份**：Windows/macOS 读取 Desktop activity log 的 `conversationId`；宿主仍提供 Hooks 时，再把 Hook 的 `session_id` 和 `transcript_path` 作为强绑定兼容路径。
+2. **校验 transcript 路径**：路径必须位于允许的 Codex sessions root 下，扩展名为 `.jsonl`，并拒绝路径逃逸和符号链接。
+3. **校验 rollout 文件名**：文件名中的 session ID 必须与候选 `conversationId` 一致。
+4. **校验首条元数据**：rollout 首条 `session_meta.payload.id` 必须再次匹配，不能只相信文件名。
+5. **读取 token snapshot**：身份校验通过后，才从该 rollout 读取最新 `event_msg/token_count`，并更新 Overlay 与 Context Usage Skill。
 
-1. 先确认 Overlay 是否定位到了正确窗口；
-2. 再确认当前 task 是否绑定到了 session；
-3. 再确认对应 rollout 是否存在 token snapshot；
-4. 最后才检查数值计算。
+如果任一步无法确认，绑定状态就是 `Unbound`，Overlay 保持等待或显示上一次已确认的 snapshot，不会用另一个 task 的数据填充当前面板。
 
-如果一开始只盯着“为什么是 0”，很容易在公式和 JSON parser 上浪费时间。
+![Codex Context Inspector 当前 task 绑定流程](/images/codex-context-inspector-task-binding.svg)
 
-## 为什么不能直接选择“最近修改的 JSONL”
-
-最省事的做法，是扫描 session 文件，然后选择最近更新的 JSONL。但这在多个 task 并行运行时非常危险。
-
-另一个后台 task 仍可能持续写入 token event。此时，“最近修改”并不等于“用户当前正在看的 task”。对于 Context 工具来说，最糟糕的错误不是暂时空白，而是把另一个 task 的数据当成当前 task 显示。
-
-最后采用的第二条绑定信号来自 Codex Desktop 的本地活动日志，其中能观察到当前活动窗口对应的 `conversationId`。Windows 和 macOS 的日志根目录不同，但解析器都只接受同时满足活动、聚焦和可见条件的窗口，再执行两层校验：
-
-1. rollout 文件名必须与 session id 对应；
-2. 文件内首条 `session_meta.payload.id` 必须再次匹配。
-
-最终的绑定优先级是：
-
-```mermaid
-flowchart TD
-    HK[Plugin Hook 强绑定] -->|绑定有效| V[文件名 + session_meta.id 双重校验]
-    HK -->|Hook 未触发或绑定过期| DL[Desktop activity log 的 conversationId]
-    DL --> V
-    V -->|一致| B[Bound：显示当前 task 的 Context]
-    V -->|不一致或证据不足| U[Unbound：保持 Unknown]
-```
-
-这里的关键不是“永远都能显示数字”，而是 fail closed：无法证明数据属于当前 task 时，就不显示猜测结果。
+*当前 task 绑定先确认窗口和 session 身份，再决定是否展示 Context。*
 
 ## 如何读取当前 Context
 

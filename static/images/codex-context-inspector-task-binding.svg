@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560" role="img" aria-labelledby="title desc">
+  <title id="title">Codex Context Inspector 当前 task 绑定流程</title>
+  <desc id="desc">从前台 Codex 窗口、Desktop activity log 或 Hook 得到候选 session 后，用 rollout 文件名和 session_meta.id 双重校验，匹配成功才显示 Context，否则保持 Unbound。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#64748b"/></marker>
+    <style>
+      .bg{fill:#f8fafc}.title{font:700 28px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC",sans-serif;fill:#0f172a}.label{font:600 20px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC",sans-serif;fill:#0f172a}.small{font:500 16px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC",sans-serif;fill:#475569}.edge{stroke:#64748b;stroke-width:2.5;fill:none;marker-end:url(#arrow)}.source{fill:#e0f2fe;stroke:#0284c7;stroke-width:2}.check{fill:#fef3c7;stroke:#d97706;stroke-width:2}.bound{fill:#dcfce7;stroke:#16a34a;stroke-width:2}.unknown{fill:#f1f5f9;stroke:#64748b;stroke-width:2}.note{font:600 15px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC",sans-serif;fill:#64748b}
+    </style>
+  </defs>
+  <rect class="bg" width="1600" height="560" rx="24"/>
+  <text class="title" x="48" y="52">当前 task 绑定：窗口信号 → rollout 身份校验 → 安全展示</text>
+
+  <rect class="source" x="70" y="115" width="300" height="82" rx="14"/>
+  <text class="label" x="220" y="149" text-anchor="middle">前台 Codex 窗口</text>
+  <text class="small" x="220" y="175" text-anchor="middle">active / focused / visible</text>
+  <rect class="source" x="70" y="240" width="300" height="82" rx="14"/>
+  <text class="label" x="220" y="274" text-anchor="middle">Desktop activity log</text>
+  <text class="small" x="220" y="300" text-anchor="middle">conversationId</text>
+  <rect class="source" x="70" y="365" width="300" height="82" rx="14"/>
+  <text class="label" x="220" y="399" text-anchor="middle">Plugin Hook</text>
+  <text class="small" x="220" y="425" text-anchor="middle">session_id + transcript_path</text>
+
+  <rect class="check" x="535" y="145" width="410" height="210" rx="18"/>
+  <text class="label" x="740" y="185" text-anchor="middle">Rollout 身份校验</text>
+  <text class="small" x="570" y="225">1. 文件名必须匹配 session id</text>
+  <text class="small" x="570" y="265">2. 首条 session_meta.payload.id 再匹配</text>
+  <text class="note" x="740" y="320" text-anchor="middle">不选择“最近修改”的 JSONL</text>
+  <path class="edge" d="M370 156L535 205"/>
+  <path class="edge" d="M370 281L535 250"/>
+  <path class="edge" d="M370 406L535 300"/>
+
+  <rect class="bound" x="1150" y="115" width="350" height="100" rx="16"/>
+  <text class="label" x="1325" y="155" text-anchor="middle">Bound</text>
+  <text class="small" x="1325" y="183" text-anchor="middle">显示当前 task 的 Context</text>
+  <rect class="unknown" x="1150" y="300" width="350" height="100" rx="16"/>
+  <text class="label" x="1325" y="340" text-anchor="middle">Unbound</text>
+  <text class="small" x="1325" y="368" text-anchor="middle">保持 Unknown，不显示猜测值</text>
+  <path class="edge" d="M945 205L1150 165"/>
+  <path class="edge" d="M945 300L1150 350"/>
+  <text class="note" x="1015" y="165">一致</text>
+  <text class="note" x="980" y="355">不一致 / 证据不足</text>
+
+  <text class="note" x="70" y="510">绑定成功后，才继续读取 token_count 并更新 Overlay 与 Context Usage Skill。</text>
+</svg>
