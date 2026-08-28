@@ -314,32 +314,6 @@ snapshot.displayed
 45acd77 fix: auto-bind context inspector sessions on Windows
 ```
 
-## 这次实践最值得复用的六个经验
-
-### 1. 总量准确，不代表分项也准确
-
-证据等级应该进入数据模型和 UI，而不是只在角落里写一句“仅供参考”。
-
-### 2. 当前 task 关联比 token parser 更难
-
-读取最新 token event 并不复杂，难的是证明它属于用户眼前的 task。
-
-### 3. 不要用“最近文件”代替明确身份
-
-时间上的接近不能替代 session id。在并行工作流里，这种捷径很容易串线。
-
-### 4. 每条关键链路都要留下独立证据
-
-窗口定位、task 绑定、token 读取、归因和 UI 展示应分别记录状态，否则一个空值会指向太多可能原因。
-
-### 5. 把不稳定兼容面封装在 adapter 里
-
-UIA selector、Desktop log 和 rollout JSONL 都可能变化。上层应只依赖稳定的内部模型，例如 `SessionBinding`、`UsageSnapshot` 和 `ContextAttribution`。
-
-### 6. 无法确认时，Unknown 比错误数字更可信
-
-可观测性工具首先要保证不误导。临时缺少数据可以接受，跨 task 显示错误数据不可以。
-
 ## 已知限制
 
 这仍然是 Windows 和 macOS 的本地实验实现，而不是稳定产品：
@@ -352,6 +326,11 @@ UIA selector、Desktop log 和 rollout JSONL 都可能变化。上层应只依�
 - Windows 的多窗口、混合 DPI、休眠恢复，以及 macOS 的多 Space、权限变更和日志轮转仍需更长期测试；
 
 如果未来 Codex 提供稳定的 active-task token usage 接口，本地日志与 transcript adapter 应该优先被替换；macOS 的 Accessibility 定位也可以退化成更简单、受支持的窗口锚点。
+
+## 代码仓库
+
+- [codex-context-inspector](https://github.com/songkainpu/codex-context-inspector)
+
 ## 参考资料
 
 - [OpenAI：Plugins](https://learn.chatgpt.com/docs/plugins)
