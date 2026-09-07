@@ -2,7 +2,7 @@
 title: "Codex 接第三方模型报 unknown tool type: namespace：一次完整排查"
 date: 2026-09-07T00:00:00+08:00
 draft: false
-description: "从版本降级、空配置对照到抓包定位 originator，解释 Codex Desktop 接入第三方模型时 namespace/custom 工具不兼容的根因与代理解法。"
+description: "记录 Codex Desktop 接入第三方模型后遇到 unknown tool type: namespace 时，从版本降级、最小配置到抓包和本地代理的完整排查过程。"
 tags: ["Codex", "DeepSeek", "LLM", "代理", "排障"]
 categories: ["技术"]
 cover:
@@ -23,23 +23,9 @@ unknown tool type: namespace
 - 终端里的交互式 `codex` 也报错；
 - `codex exec` 却能正常工作。
 
-最后抓取真实请求并做单变量实验后，我确认问题既不在版本，也不在工具数量，而在**不同客户端入口生成了不同类型的工具定义**：`codex exec` 发送标准 `function`，Desktop、交互式 CLI 和 SDK 则可能发送 Codex 扩展的 `namespace` 或 `custom`。第三方模型或兼容网关若只实现了 `function`，就会直接拒绝请求。
+三个入口共用一份配置，结果却完全不同。问题显然不只是“第三方模型不兼容 Codex”这么简单：如果真是模型或网关完全不支持，`codex exec` 也不该例外。
 
-本文记录完整排查过程，以及我最后使用本地请求转换代理绕过兼容问题的做法。
-
-## 先说结论
-
-这次问题可以浓缩成一条链路：
-
-1. Codex 根据客户端身份标识 `originator` 选择工具组织方式；
-2. Desktop / 交互式 CLI 的请求中出现 `namespace`，SDK 请求中可能出现 `custom`；
-3. 公司网关后的 DeepSeek 只接受标准 `function` 工具；
-4. 请求因此在服务端参数校验阶段失败；
-5. 在网关前增加本地代理，移除不支持的工具和字段后，请求恢复正常。
-
-![从错误现象到定位 originator 的排查路径](/images/posts/codex-third-party-model-namespace/troubleshooting.svg)
-
-需要强调的是，这不是一个对所有 Codex 版本、所有第三方网关都成立的永久协议说明，而是基于我当时环境中的实测结果。客户端和接口协议升级后，字段及行为都可能变化，排查时应以实际请求为准。
+我先从版本差异查起，随后清空工具配置做最小环境对照，最后把几个入口发出的真实请求逐项摆在一起比较。下面按实际排查顺序展开。
 
 ## 坑一：以为是 Codex 版本问题
 
@@ -187,6 +173,8 @@ SSL: CERTIFICATE_VERIFY_FAILED
 
 回头看，这类兼容问题可以按下面的顺序排查，避免在版本和配置上来回试错：
 
+![从错误现象到定位 originator 的排查路径](/images/posts/codex-third-party-model-namespace/troubleshooting.svg)
+
 1. 用最小 prompt 分别测试 Desktop、交互式 CLI 和 `codex exec`；
 2. 记录各入口的状态码与服务端原始错误；
 3. 将 `base_url` 指向本地 mock server，脱敏后比较请求体；
@@ -202,3 +190,7 @@ SSL: CERTIFICATE_VERIFY_FAILED
 这次排查最费时间的不是写代理，而是连续推翻两个看似合理的假设：先是版本，再是工具数量。真正让问题收敛的，是把不同入口的真实请求放在一起比较，并且一次只改变一个变量。
 
 `unknown tool type: namespace` 表面上像一句信息不足的服务端报错，背后其实是客户端工具协议与第三方兼容层之间的能力错位。遇到类似问题时，与其猜某个配置项，不如先确认请求究竟发了什么。协议兼容问题，最终都要回到线上的真实字节。
+
+在我当时的环境里，完整链路是：Codex 根据 `originator` 选择工具组织方式，Desktop 和交互式 CLI 发出了网关不支持的 `namespace`，SDK 则可能发出 `custom`；`codex exec` 使用标准 `function`，所以能够正常工作。Desktop 无法靠内部环境变量切换身份后，我最终用本地代理移除不兼容的工具和字段，让请求恢复正常。
+
+这个结论只对应当时使用的 Codex 版本和第三方网关，并不是一份永久不变的协议说明。客户端或接口升级后，字段和行为都可能变化，仍应以实际请求为准。

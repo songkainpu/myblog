@@ -12,20 +12,9 @@ categories: ["技术"]
 
 低流量时一切正常，流量上来后却偶尔出现一种反直觉的现象：Canal 已经收到 `INSERT`，消费者立即回查同一台主库却返回空，稍后重试又能查到。
 
-这不是“数据页还没刷盘”。真正的原因是：**Binlog 对 Dump 线程可读，和 InnoDB 事务对其他会话可见，是两个不同的完成时刻。**
+第一反应往往是“数据页还没刷盘”，但这个解释经不起推敲：查询能否看到一条记录，判断的是事务可见性，并不要求脏页已经落盘。既然不是刷盘延迟，就需要继续沿着 MySQL 提交、Binlog Dump 和 Canal 投递这几条链路往下找。
 
 > 源码基线：MySQL 8.0.46、Canal `87be50e`
-
-## 核心结论
-
-MySQL 提交事务时，会先将包含 XID 的完整事务写入并发布到 Binlog，再进入 InnoDB engine commit。Binlog Dump 线程只关心新的 Binlog end position，不会等待 InnoDB commit，因此可能先把事务发给 Canal。
-
-- 异步复制也存在这个基础竞态，但窗口通常很短；
-- 半同步 `AFTER_COMMIT` 能缩短窗口，但不能严格消除；
-- 半同步 `AFTER_SYNC` 会在 Binlog 发布和 engine commit 之间等待 ACK，最容易把窗口放大；
-- 高并发会通过 Group Commit、提交队列和线程调度增加命中概率。
-
-工程上，最优先的做法是直接消费 Binlog after image，避免事件后立即回查；必须回查时，可使用有限退避或 GTID 可见性屏障。
 
 ## 现象与前提
 
@@ -175,7 +164,7 @@ case TRANSACTIONEND:
 
 `AFTER_COMMIT` 把 ACK 等待移到 InnoDB commit 之后，去掉了 commit 前的长等待。但 Dump 线程仍可能在 engine commit 前被唤醒，因此它只能显著缩短窗口，不能从源码上保证窗口为零。
 
-准确的结论是：
+这两种等待点的差别就在这里：
 
 > Binlog 可读取早于 InnoDB commit，是基础提交管线允许的；`AFTER_SYNC` 又在两者之间加入 ACK 等待，将这个竞态放大。
 
@@ -418,4 +407,3 @@ InnoDB 事务已经对主库其他会话可见
 MySQL 会先把包含 XID 的完整事务写入并发布到 Binary Log，随后再进入 InnoDB engine commit。异步复制和 `AFTER_COMMIT` 都存在短暂的基础竞态；`AFTER_SYNC` 则在两者之间增加了 ACK 等待，最容易放大这个窗口。
 
 正确的治理方向，是减少事件后的数据库回查，或显式建立 GTID 可见性屏障。不要依赖“正常情况下 commit 应该更快”，也不要把固定延迟或切换复制模式当作严格的正确性保证。
-
