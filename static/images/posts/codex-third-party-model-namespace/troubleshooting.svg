@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="640" viewBox="0 0 1440 640" role="img" aria-labelledby="title desc">
+  <title id="title">Codex namespace 错误排查路径</title>
+  <desc id="desc">从版本和工具数量假设，经过对照实验，最终定位到 originator 并采用代理转换。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#091426"/><stop offset="1" stop-color="#121a35"/></linearGradient>
+    <linearGradient id="accent" x1="0" x2="1"><stop stop-color="#2dd4bf"/><stop offset="1" stop-color="#818cf8"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-opacity=".28"/></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0l10 5-10 5z" fill="#64748b"/></marker>
+  </defs>
+  <rect width="1440" height="640" rx="32" fill="url(#bg)"/>
+  <text x="72" y="82" fill="#f8fafc" font-family="system-ui,sans-serif" font-size="34" font-weight="700">unknown tool type: namespace</text>
+  <text x="72" y="122" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="20">用单变量实验排除干扰项</text>
+  <g font-family="system-ui,sans-serif" filter="url(#shadow)">
+    <g transform="translate(72 190)"><rect width="280" height="150" rx="22" fill="#172033" stroke="#334155"/><text x="24" y="44" fill="#94a3b8" font-size="17">假设 01</text><text x="24" y="84" fill="#f8fafc" font-size="25" font-weight="650">是版本问题？</text><text x="24" y="120" fill="#fb7185" font-size="18">降级后仍报错  ×</text></g>
+    <path d="M352 265h74" stroke="#64748b" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(440 190)"><rect width="280" height="150" rx="22" fill="#172033" stroke="#334155"/><text x="24" y="44" fill="#94a3b8" font-size="17">假设 02</text><text x="24" y="84" fill="#f8fafc" font-size="25" font-weight="650">是工具太多？</text><text x="24" y="120" fill="#fb7185" font-size="18">空配置仍报错  ×</text></g>
+    <path d="M720 265h74" stroke="#64748b" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(808 190)"><rect width="280" height="150" rx="22" fill="#172033" stroke="#334155"/><text x="24" y="44" fill="#94a3b8" font-size="17">实验 03</text><text x="24" y="84" fill="#f8fafc" font-size="25" font-weight="650">只改 originator</text><text x="24" y="120" fill="#2dd4bf" font-size="18">工具类型随之变化  ✓</text></g>
+    <path d="M1088 265h74" stroke="#64748b" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(1176 190)"><rect width="192" height="150" rx="22" fill="#172033" stroke="#818cf8"/><text x="24" y="44" fill="#a5b4fc" font-size="17">结论</text><text x="24" y="82" fill="#f8fafc" font-size="23" font-weight="650">入口决定</text><text x="24" y="114" fill="#f8fafc" font-size="23" font-weight="650">工具协议</text></g>
+  </g>
+  <rect x="72" y="418" width="1296" height="128" rx="24" fill="#0f172a" stroke="#263349"/>
+  <rect x="96" y="446" width="10" height="72" rx="5" fill="url(#accent)"/>
+  <text x="132" y="473" fill="#cbd5e1" font-family="system-ui,sans-serif" font-size="19">最终处理</text>
+  <text x="132" y="510" fill="#f8fafc" font-family="system-ui,sans-serif" font-size="27" font-weight="650">本地代理移除 namespace 与不兼容字段，再转发至第三方模型</text>
+</svg>
