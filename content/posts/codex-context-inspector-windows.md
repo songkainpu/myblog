@@ -23,7 +23,7 @@ categories: ["技术"]
 - 是哪一类工具结果正在快速挤占空间？
 - 现在应该继续工作、主动 compact，还是另开一个 task？
 
-只看到一个百分比并不够。它像汽车仪表盘上的剩余油量，能告诉你还剩多少，却解释不了油耗来自哪里。
+百分比只能说明 Context 还剩多少，无法看出空间被哪些内容占用。
 
 于是，最初“在输入框旁边放一个 Context 按钮”的小想法，逐渐变成了一个 Context 可观测性工具。
 
@@ -66,11 +66,11 @@ Unattributed / hidden             ≈   2.0k
 
 整个工具在本机运行，不把会话内容上传到外部服务。
 
-目前有两个原生 sidecar：Windows 版使用 .NET 8 WPF，macOS 版使用 Swift + AppKit，核心数据模型和 Skill 查询协议保持一致。也就是说，平台不同，Context 的证据等级和计算语义不变。
+目前有两个原生 sidecar：Windows 版使用 .NET 8 WPF，macOS 版使用 Swift + AppKit。两端共用核心数据模型和 Skill 查询协议，Context 的证据等级和计算语义保持一致。
 
-## 第一条原则：不要给估算披上准确值的外衣
+## 数值分为四种证据等级
 
-这个项目最重要的设计决定，不是展示尽可能多的数字，而是先说明每个数字的证据等级。
+面板会标明每个数字的来源和可信程度，共分为四类：
 
 | 类型 | 含义 | 示例 |
 | --- | --- | --- |
@@ -88,7 +88,7 @@ remaining  = max(0, window - used)
 percent    = used / window × 100%
 ```
 
-一个很容易踩的坑是把 `total_token_usage` 当成当前 Context。它表示整个 session 的累计消耗，可能远大于模型窗口；真正对应当前请求携带 Context 的，是最新的 `last_token_usage.input_tokens`。
+`total_token_usage` 表示整个 session 的累计消耗，可能远大于模型窗口。当前请求携带的 Context 应读取最新的 `last_token_usage.input_tokens`。
 
 至于 Skill 和 MCP tool 的逐项占用，Codex 并没有直接提供精确账单。因此面板统一用 `≈` 标识，并采用一个透明的近似：
 
@@ -96,20 +96,20 @@ percent    = used / window × 100%
 estimated_tokens ≈ ceil(UTF-8 bytes / 4)
 ```
 
-这不是模型 tokenizer，只适合观察相对量级。它的意义是帮助判断“哪里可能偏大”，而不是声称某个 Skill 精确占用了多少 token。
+`UTF-8 bytes / 4` 只用于观察相对量级，不能代表某个 Skill 实际占用的精确 token 数。
 
 ## 为什么是插件加原生 Overlay
 
 插件适合打包 Skill、Hooks、sidecar 和安装信息，但这个实验没有通过受支持的扩展点把按钮直接注入 Codex Desktop 的 composer。
 
-为了不修改 Codex 安装文件、不注入 DLL，也不依赖 Chromium 内部 DOM，我选择了独立的原生 sidecar。Windows 版是 .NET 8 WPF：
+UI 由独立的原生 sidecar 提供，Codex 安装文件、DLL 和 Chromium 内部 DOM 都保持不动。Windows 版使用 .NET 8 WPF：
 
 - 使用 Windows UI Automation 定位 Codex 窗口和输入框；
 - 用一个不抢焦点的透明 Overlay 跟随输入框移动；
 - 从本机会话记录读取 Context 数据；
 - 通过当前用户专用的命名管道，让 Skill 和 Overlay 共用同一份报告。
 
-macOS 版没有把 WPF 硬搬过去，而是使用 Swift + AppKit：
+macOS 版使用 Swift + AppKit：
 
 - 通过 `com.openai.codex` bundle identifier 和屏幕窗口信息找到 Codex；
 - 在用户授予 Accessibility 权限后，遍历 Accessibility tree 定位 composer；
@@ -127,7 +127,7 @@ macOS 版没有把 WPF 硬搬过去，而是使用 Swift + AppKit：
 
 ## macOS 端：把 Windows Overlay 换成原生 AppKit
 
-macOS 版的目标不是重新发明一套 Context 计算，而是复用同一套证据模型：最新 `event_msg/token_count` 仍然提供准确总量，Skill、MCP tool、消息和工具结果仍然只是带 `≈` 的本地估算。真正需要替换的是窗口定位、进程间通信和打包方式。
+Windows 和 macOS 共用同一套 Context 证据模型：最新的 `event_msg/token_count` 提供准确总量，Skill、MCP tool、消息和工具结果使用带 `≈` 的本地估算。macOS 端单独实现窗口定位、进程间通信和打包。
 
 紧凑状态会直接显示在 Codex 窗口附近，颜色表示当前使用比例：
 
@@ -147,7 +147,7 @@ macOS 版的目标不是重新发明一套 Context 计算，而是复用同一�
 
 ### 1. 为什么选择 Swift + AppKit
 
-macOS 上最敏感的部分是“悬浮在 composer 附近，但不能把 Codex 的焦点抢走”。因此 UI 使用 AppKit 的 `NSPanel`，而不是普通 SwiftUI window：
+macOS UI 使用 AppKit 的 `NSPanel`，让面板悬浮在 composer 附近，同时保留 Codex 的键盘焦点：
 
 - 紧凑 pill 是 borderless、non-activating panel；
 - 鼠标悬停时展开详情，点击可以 pin；
@@ -157,9 +157,9 @@ macOS 上最敏感的部分是“悬浮在 composer 附近，但不能把 Codex 
 
 ### 2. Accessibility 权限只用于定位界面
 
-要把 pill 放到输入框附近，macOS sidecar 需要用户在“系统设置 → 隐私与安全性 → 辅助功能”中授予 Accessibility 权限。权限用途是读取 Codex 窗口的结构和几何位置，不是读取其他应用的文本内容。
+要把 pill 放到输入框附近，macOS sidecar 需要用户在“系统设置 → 隐私与安全性 → 辅助功能”中授予 Accessibility 权限。sidecar 只读取 Codex 窗口的结构和几何位置。
 
-sidecar 会优先寻找前台、聚焦的 Codex 窗口，再在有限深度和节点数内寻找下半部分的可编辑文本区域。无法取得权限时仍可运行，但只能使用窗口级 fallback anchor；这时状态会显示为等待或低置信度定位，而不是伪装成精确贴着 composer。
+sidecar 会优先寻找前台、聚焦的 Codex 窗口，再在有限深度和节点数内寻找下半部分的可编辑文本区域。无法取得权限时仍可运行，但只能使用窗口级 fallback anchor；这时状态会显示为等待或低置信度定位。
 
 ### 3. macOS 上的当前 task 绑定
 
@@ -211,7 +211,7 @@ scripts/install-personal-macos.sh
 
 ## 当前 task 绑定：从窗口到 rollout 的实现
 
-Context Inspector 不扫描“最近修改的 JSONL”，而是先确定用户当前看到的 Codex 窗口，再把窗口信号解析成候选 `conversationId` 或 session 元数据。
+Context Inspector 先确定用户当前看到的 Codex 窗口，再把窗口信号解析成候选 `conversationId` 或 session 元数据。这样可以避免仅凭 JSONL 的最近修改时间误绑到后台 task。
 
 Windows 端通过 UI Automation 找到前台 Codex 窗口和 composer；macOS 端优先使用 `com.openai.codex` 的前台窗口、Accessibility focused window 和 `CGWindow` 信息。两端都只接受 active、focused、visible 的窗口，避免把后台 task 当成当前 task。
 
@@ -242,7 +242,7 @@ Windows 端通过 UI Automation 找到前台 Codex 窗口和 composer；macOS �
 - 忽略部分写入的末行；
 - 按文件长度和修改时间缓存结果。
 
-这里说的“准确”，只表示数值直接来自 Codex 当前记录，并不表示承载它的本地 JSONL 格式是稳定公开协议。
+这里的“准确”只表示数值直接来自 Codex 当前记录。本地 JSONL 格式仍属于非公开接口，后续版本可能变化。
 
 ## 分项估算如何与准确总量对齐
 
@@ -265,7 +265,7 @@ Windows 端通过 UI Automation 找到前台 Codex 窗口和 composer；macOS �
 4. 将无法解释的差额放入 `Unattributed / hidden`；
 5. 保证每层子项之和与父项一致。
 
-因此，面板展示的是一张与准确总量对齐的“可见证据地图”，而不是伪造出来的精确账单。
+因此，面板展示的是一张与准确总量对齐的“可见证据地图”。其中的分类数据仍是估算值，不能当作精确的 token 账单。
 
 ## 日志把“空数据”变成了可诊断问题
 
@@ -291,37 +291,16 @@ fallback.binding_updated
 snapshot.displayed
 ```
 
-当关键链路都有独立证据后，“为什么没有数据”才从猜谜变成了可以逐层验证的问题。
-
-## 验证结果
-
-我没有只在开发对话里验证，而是覆盖了多个实际切换场景：
-
-| 场景 | 结果 |
-| --- | --- |
-| 当前开发 task | 自动解析并显示 snapshot |
-| 新建 task | 首次产生 session 后自动绑定 |
-| 两个其他 task 之间切换 | 分别绑定到不同 conversation id |
-| sidecar 重启 | 恢复当前 task，无需手动执行 Hook |
-| 同名或标题变化的 task | 按 conversation id 校正，不沿用旧 session |
-| Skill 查询 | 与 Overlay 使用同一份总量和分项估算 |
-| 固定 fixture 自检 | `116,726 / 258,400`，计算通过 |
-| macOS Universal 2 构建 | arm64 与 x86_64 构建完成，`--self-test` 通过 |
-
-对应的故障修复提交为：
-
-```text
-45acd77 fix: auto-bind context inspector sessions on Windows
-```
+这些事件可以直接显示故障发生在窗口定位、task 绑定、数据读取还是 UI 展示环节。
 
 ## 已知限制
 
-这仍然是 Windows 和 macOS 的本地实验实现，而不是稳定产品：
+Windows 和 macOS 的当前实现仍处于实验阶段：
 
 - Windows 目前只面向 Windows 10/11 x64；macOS 目前面向 macOS 13+ 的 arm64/x86_64；两者都依赖 Codex Desktop；
 - Windows UIA 和 macOS Accessibility 都依赖当前 Desktop 的可访问性树；
-- Desktop activity log 和 rollout JSONL 不是稳定公开接口；
-- UTF-8/4 不是模型 tokenizer，所有分类和明细都只是估算；
+- Desktop activity log 和 rollout JSONL 属于非公开接口，格式可能随版本变化；
+- UTF-8/4 仅提供粗略估算，所有分类和明细都带有误差；
 - attribution 会在本地读取有界 transcript 内容；
 - Windows 的多窗口、混合 DPI、休眠恢复，以及 macOS 的多 Space、权限变更和日志轮转仍需更长期测试；
 

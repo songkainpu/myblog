@@ -2,7 +2,7 @@
 title: "Codex 接第三方模型报 unknown tool type: namespace：一次完整排查"
 date: 2026-09-07T00:00:00+08:00
 draft: false
-description: "记录 Codex Desktop 接入第三方模型后遇到 unknown tool type: namespace 时，从版本降级、最小配置到抓包和本地代理的完整排查过程。"
+description: "解释 Codex Desktop 接入第三方模型时 namespace/custom 工具不兼容的原因，以及不同客户端入口的请求差异和处理方法。"
 tags: ["Codex", "DeepSeek", "LLM", "代理", "排障"]
 categories: ["技术"]
 cover:
@@ -23,27 +23,19 @@ unknown tool type: namespace
 - 终端里的交互式 `codex` 也报错；
 - `codex exec` 却能正常工作。
 
-三个入口共用一份配置，结果却完全不同。问题显然不只是“第三方模型不兼容 Codex”这么简单：如果真是模型或网关完全不支持，`codex exec` 也不该例外。
+三个入口共用一份配置，结果却完全不同，说明网关的兼容情况还与客户端入口有关。
 
-我先从版本差异查起，随后清空工具配置做最小环境对照，最后把几个入口发出的真实请求逐项摆在一起比较。下面按实际排查顺序展开。
+要解释这个差异，需要看版本、工具配置和不同入口实际发出的请求。
 
-## 坑一：以为是 Codex 版本问题
+## 排除版本和工具数量
 
-看到 `unknown tool type: namespace` 时，我的第一反应是：`namespace` 会不会是 Codex 新版本刚引入的工具类型，而 DeepSeek 还没来得及支持？
+`namespace` 看起来像 Codex 新版本引入的工具类型，但 npm 安装的较老稳定版仍然报错，另一个看起来更新的内置 CLI 在特定入口下反而正常。因此，问题不能简单归因于版本升级。
 
-如果这个猜测成立，降级应该能解决问题。但对照结果恰好相反：npm 安装的较老稳定版仍然报同样的错，而另一个看起来更新的内置 CLI 在特定入口下反而正常。
+清空 browser、computer-use 和 MCP server 等额外工具配置后，Desktop 入口仍然发送 `namespace` 并被网关拒绝，工具数量没有改变请求类型。
 
-这说明“版本新旧”并不是决定条件。真正值得追的变量变成了：**这些调用究竟走了哪条请求链路？**
+差异来自客户端入口及其发出的请求结构。
 
-## 坑二：以为是工具太多触发了折叠
-
-第二个猜测是工具数量。我的配置里有 browser、computer-use 和多个 MCP server，会不会是工具太多，Codex 才把它们折叠成 `namespace`？
-
-于是我清空了额外工具配置，只保留最小环境。结果 Desktop 入口照样报错。
-
-这个实验排除了“工具数量触发折叠”的假设。`namespace` 是否出现，与安装了多少工具没有直接关系；至少在这次环境里，决定因素仍然是客户端入口。
-
-## 真正的开关：`originator`
+## `originator` 决定工具形式
 
 把几个入口发出的请求并排比较后，差异变得很清楚：
 
@@ -53,7 +45,7 @@ unknown tool type: namespace
 | TypeScript SDK | `codex_sdk_ts` | `custom` | 拒绝 `custom` |
 | Desktop / 交互式 `codex` | `Codex Desktop` | `namespace` | 拒绝 `namespace` |
 
-这里最容易误判的一点是：终端中的交互式 `codex` 并不等于 `codex exec`。前者走 app-server 链路，在我的测试中使用了与 Desktop 相同的客户端身份，因此也会触发 `namespace`；后者是一次性执行入口，只发送了标准 `function`。
+终端中的交互式 `codex` 和 `codex exec` 走不同链路。前者走 app-server，在我的测试中使用了与 Desktop 相同的客户端身份，因此也会触发 `namespace`；后者是一次性执行入口，只发送标准 `function`。
 
 在 SDK 场景中，设置内部环境变量：
 
@@ -65,23 +57,17 @@ CODEX_INTERNAL_ORIGINATOR_OVERRIDE=codex_exec
 
 由于这是内部变量，不应把它当作稳定公开配置依赖。升级后如果行为变化，仍需重新抓包确认。
 
-## 我是怎么把问题锁定到 `originator` 的
+## 请求体里实际发生了什么
 
 我在本机启动了一个 mock server，把 Codex 的 `base_url` 临时指向它，记录实际请求体。在失败请求的 `tools` 数组中，我看到了多个 `namespace` 类型工具：其中包括 multi-agent 工具，也包括被打包成 namespace 的 MCP server。
 
-随后做单变量对照：请求内容、模型配置和工具配置保持不变，只改变 `originator`。当 `originator` 切换为 `codex_exec` 时，工具定义变为 `function`，请求可以被第三方模型接受。
-
-这一轮实验比反复修改版本和配置更有价值，因为它同时解释了三个现象：
-
-- 为什么 Desktop 和交互式 CLI 一起失败；
-- 为什么 `codex exec` 正常；
-- 为什么 SDK 报的是另一个工具类型 `custom`。
+将 `originator` 切换为 `codex_exec` 后，工具定义变为 `function`，同一个第三方模型可以接受请求。这也解释了为什么 Desktop 和交互式 CLI 一起失败、`codex exec` 却能正常工作，以及 SDK 为什么会报另一个工具类型 `custom`。
 
 抓包时应只记录定位问题所需字段，并对 Authorization、Cookie、提示词和业务数据做脱敏；不要把完整请求日志直接发到公共 issue。
 
 ## 解决方案：在中间增加请求转换代理
 
-既然上游会发送第三方模型不认识的工具类型，而 Desktop 又无法通过环境变量切换身份，最直接的兼容方案是在本机增加一层代理：接收 Codex 请求，清理不兼容字段，再转发到公司网关。
+Desktop 无法通过环境变量切换身份时，可以在本机增加一层代理：接收 Codex 请求，清理不兼容字段，再转发到公司网关。
 
 ![Codex 请求经过本地代理清理后转发到第三方模型](/images/posts/codex-third-party-model-namespace/proxy-flow.svg)
 
@@ -129,9 +115,9 @@ def transform_tools(tools):
     return result, changed
 ```
 
-我最初选择的是 `strip` 模式，也就是直接丢弃 namespace 工具。优点是实现简单，能够快速验证根因；代价也很明确：**被移除的工具在这一轮对话中不可用。**
+`strip` 模式会直接丢弃 namespace 工具，实现简单，但**被移除的工具在这一轮对话中不可用。**
 
-如果希望保留能力，可以把 namespace 内的 function 展开到顶层，并为工具名增加 namespace 前缀。但这不只是改一遍请求：模型返回工具调用后，代理还要把名称映射回原始结构，并正确处理流式响应、并发调用和错误结果。只做单向 flatten 很可能造成“模型会调用、客户端接不住”的新问题。
+如果希望保留能力，可以把 namespace 内的 function 展开到顶层，并为工具名增加 namespace 前缀。完整实现需要同时改写请求和响应：模型返回工具调用后，代理还要把名称映射回原始结构，并正确处理流式响应、并发调用和错误结果。只做单向 flatten 很可能造成“模型会调用、客户端接不住”的新问题。
 
 ## 代理实现中还要注意什么
 
@@ -167,30 +153,25 @@ SSL: CERTIFICATE_VERIFY_FAILED
 
 我也考虑过 CC Switch 一类本地路由工具。它们适合切换 endpoint、模型和密钥，但这次问题发生在请求体结构里，需要修改 `tools` 数组和具体字段。如果代理只做路由和鉴权替换，就无法解决 `namespace` 不兼容。
 
-判断一个现成工具能否解决问题，关键不是它是否“支持 Codex”，而是它是否提供**请求体转换**能力，并且能否同时处理流式响应与工具调用名称映射。
+选择现成工具时，需要确认它能否转换请求体，并同时处理流式响应与工具调用名称映射。仅支持 endpoint、模型和密钥切换无法解决这个问题。
 
-## 一套更高效的排查顺序
+## 如何确认遇到的是同一个问题
 
-回头看，这类兼容问题可以按下面的顺序排查，避免在版本和配置上来回试错：
+可以从以下几个特征判断：
 
 ![从错误现象到定位 originator 的排查路径](/images/posts/codex-third-party-model-namespace/troubleshooting.svg)
 
-1. 用最小 prompt 分别测试 Desktop、交互式 CLI 和 `codex exec`；
-2. 记录各入口的状态码与服务端原始错误；
-3. 将 `base_url` 指向本地 mock server，脱敏后比较请求体；
-4. 重点对比 `originator`、`tools[].type` 和非标准字段；
-5. 做单变量实验，不要同时升级版本、删工具、换模型；
-6. 用最小转换规则验证根因，再决定 strip、flatten 还是更换兼容网关；
-7. 每次 Codex 或网关升级后运行一组回归请求。
+1. 请求在模型输出任何内容之前就被拒绝，错误明确指向 `namespace` 或 `custom` 工具类型；
+2. Desktop 或交互式 CLI 失败，而同一配置下的 `codex exec` 正常；
+3. 失败请求的 `tools[].type` 包含 `namespace` 或 `custom`；
+4. 网关文档只声明支持标准 `function` 工具。
 
 如果一次性任务已经能通过 `codex exec` 完成，它也是一个很实用的临时绕行方案：不需要代理，也不会牺牲额外工具。但它不能替代 Desktop 的完整交互体验。
 
-## 写在最后
+## 总结
 
-这次排查最费时间的不是写代理，而是连续推翻两个看似合理的假设：先是版本，再是工具数量。真正让问题收敛的，是把不同入口的真实请求放在一起比较，并且一次只改变一个变量。
+`unknown tool type: namespace` 发生在模型推理之前，是 Codex 客户端与第三方兼容网关之间的工具协议不匹配。在我当时的环境里，Codex 根据 `originator` 选择工具组织方式：Desktop 和交互式 CLI 发出 `namespace`，SDK 可能发出 `custom`，而 `codex exec` 发出标准 `function`。网关只支持 `function`，因此直接拒绝了前两类请求。
 
-`unknown tool type: namespace` 表面上像一句信息不足的服务端报错，背后其实是客户端工具协议与第三方兼容层之间的能力错位。遇到类似问题时，与其猜某个配置项，不如先确认请求究竟发了什么。协议兼容问题，最终都要回到线上的真实字节。
+一次性任务可以暂时改用 `codex exec`；SDK 可以尝试内部的 originator override，但不应把它当作稳定接口；Desktop 则需要使用支持这些工具类型的网关，或增加请求转换代理。直接移除 `namespace` 最简单，但对应工具会不可用；如果展开并保留工具，还必须同时处理返回调用的名称映射。
 
-在我当时的环境里，完整链路是：Codex 根据 `originator` 选择工具组织方式，Desktop 和交互式 CLI 发出了网关不支持的 `namespace`，SDK 则可能发出 `custom`；`codex exec` 使用标准 `function`，所以能够正常工作。Desktop 无法靠内部环境变量切换身份后，我最终用本地代理移除不兼容的工具和字段，让请求恢复正常。
-
-这个结论只对应当时使用的 Codex 版本和第三方网关，并不是一份永久不变的协议说明。客户端或接口升级后，字段和行为都可能变化，仍应以实际请求为准。
+以上行为来自当时使用的 Codex 版本和第三方网关。客户端或接口升级后，字段和行为都可能变化，仍应以实际请求为准。

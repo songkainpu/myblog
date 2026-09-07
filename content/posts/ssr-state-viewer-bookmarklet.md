@@ -7,7 +7,7 @@ tags: ["SSR", "Bookmarklet", "JavaScript", "Vue", "前端调试"]
 categories: ["技术"]
 ---
 
-SSR 页面常把首屏请求结果随 HTML 注入浏览器。遇到线上数据异常时，与其反复打开 Console、猜测状态位置，不如把检查动作收进一个 Bookmarklet（书签脚本）：点击书签，直接在当前页面展开一棵可搜索、可复制的 JSON 树。
+SSR 页面常把首屏请求结果随 HTML 注入浏览器。为了减少反复打开 Console、查找状态位置和手动输入命令的操作，可以把检查脚本存成 Bookmarklet（书签脚本）：点击书签，直接在当前页面展开一棵可搜索、可复制的 JSON 树。
 
 ## 为什么需要这个工具
 
@@ -18,15 +18,15 @@ SSR 应用的首屏请求通常在服务端完成，再把结果随 HTML 一起�
 - Next.js 常把数据放在 `<script id="__NEXT_DATA__" type="application/json">` 中；
 - 业务项目还可能使用完全自定义的变量名、嵌套路径或 JSON Script ID。
 
-这带来一个麻烦：**在生产环境，我们不仅难以查看请求结果，甚至要先找到状态藏在哪里。** 测试环境可以临时增加服务端日志，生产环境却要考虑性能、敏感信息和排查成本；反复打开 Console、猜变量名并手敲 `console.log(...)` 很低效。
+生产环境排查时，需要先找到状态的注入位置，再查看具体内容。测试环境可以临时增加服务端日志，生产环境还要考虑性能、敏感信息和排查成本；反复打开 Console、猜变量名并手敲 `console.log(...)` 很低效。
 
 因此，这个书签不绑定某个框架：它按顺序尝试多种读取来源，再把命中的状态显示为可折叠 JSON 树。
 
-## 从“能打印”到“真正好用”
+## 实现中遇到的问题
 
 实现时发现注入的 SSR 状态并不一定是简单的纯 JSON 对象，逐层踩坑并改进：
 
-1. **循环引用**：它是 Vue 3 响应式对象，内部 `ReactiveEffect / Link / Dep` 相互引用成环，直接 `JSON.stringify` 会抛 `Converting circular structure to JSON`。→ 改用带 `WeakSet` 记忆的防循环序列化，真正成环处标为 `[Circular]`。
+1. **循环引用**：它是 Vue 3 响应式对象，内部 `ReactiveEffect / Link / Dep` 相互引用成环，直接 `JSON.stringify` 会抛 `Converting circular structure to JSON`。→ 改用带 `WeakSet` 记忆的防循环序列化，遇到循环引用时标为 `[Circular]`。
 2. **响应式 / 类实例包裹太重**：展开后满屏 `ReactiveEffect / Route / Link / [Ref]`，业务数据被淹没。→ 增加递归「剥壳」：ref 打平取 `.value`、reactive/proxy 只枚举真实字段、原型非 `Object.prototype` 的类实例直接丢弃，只留纯业务数据。
 3. **一大段 JSON 难以阅读**：纯文本刷屏、无层级。→ 改成**可折叠树**，颜色区分类型（字段名蓝 / 字符串绿 / 数字橙 / 布尔紫 / null 灰），逐节点展开收起。
 4. **state 较大时点击白屏卡顿**：同步序列化卡死主线程，loading 无法先显示。→ 先绘制面板 + 转圈，再用 `requestAnimationFrame` 把重序列化推迟到下一帧，算完自动替换。
@@ -83,7 +83,7 @@ script#__NEXT_DATA__
 
 默认候选仍包括真实项目常用的 `__INITIAL_STATE__`，以及 `__NUXT__`、`__remixContext`、`__INITIAL_DATA__`、`__PRELOADED_STATE__`、`script#__NEXT_DATA__` 和 `script#__NUXT_DATA__`。工具只读取命中的来源，不会覆盖或修改这些业务变量。
 
-> 框架升级也可能改变注入结构，因此候选列表只是开箱即用的默认值，不是框架识别规则。团队使用自定义来源时，建议把配置同步到项目调试文档。
+> 框架升级也可能改变注入结构。候选列表只提供常见默认值，团队使用自定义来源时，建议把配置同步到项目调试文档。
 
 ## 完整代码
 

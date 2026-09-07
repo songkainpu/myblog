@@ -37,7 +37,7 @@ CloudFront-Viewer-Time-Zone
 
 - `CloudFront-Viewer-Address`：访问者 IP 和源端口，例如 `198.51.100.10:46532`
 - `CloudFront-Viewer-Country`：两位国家码，例如 `US`、`JP`
-- `CloudFront-Viewer-City`：城市名，不是所有 IP 都有
+- `CloudFront-Viewer-City`：城市名，部分 IP 没有对应数据
 - `CloudFront-Viewer-ASN`：访问者所在自治系统 ASN
 
 用法上主要有两类：
@@ -72,7 +72,7 @@ Cloudflare 官方文档：
 - https://developers.cloudflare.com/fundamentals/reference/http-headers/
 - https://developers.cloudflare.com/rules/transform/managed-transforms/reference/
 
-下面是这次真正想确认的三个问题。
+接下来验证三个问题。
 
 ## 问题一：用户能不能伪造 `CF-IPCountry` / `CF-Connecting-IP`
 
@@ -87,7 +87,7 @@ CF-Connecting-IP: 1.2.3.4
 
 如果请求是走 Cloudflare 代理链路到源站，源站不会把这个用户自带的值当成 Cloudflare 注入的可信值。
 
-这个结果符合 Cloudflare 的设计：`CF-Connecting-IP`、`CF-IPCountry` 这类 Header 不是给客户端自己声明身份用的，而是 Cloudflare 在边缘层根据连接信息和 IP 地理位置结果写给源站的。
+这个结果符合 Cloudflare 的设计：`CF-Connecting-IP`、`CF-IPCountry` 由 Cloudflare 在边缘层根据连接信息和 IP 地理位置结果写入回源请求，客户端提供的同名 Header 不作为身份依据。
 
 所以，在“请求确实经过 Cloudflare”的前提下，用户在浏览器或 curl 里手动加 `CF-*` Header，并不能伪造成另一个国家或另一个真实 IP。
 
@@ -95,17 +95,15 @@ CF-Connecting-IP: 1.2.3.4
 
 测试结论：不会。
 
-这个点一开始我也比较担心：如果 Cloudflare 没开 `Add visitor location headers`，那用户自己带一个：
+假设 Cloudflare 没开 `Add visitor location headers`，用户在请求中加入：
 
 ```http
 CF-IPCountry: US
 ```
 
-会不会因为 Cloudflare “转发普通请求头”而直接传到源站？
+需要确认这个 Header 是否会被当作普通请求头传到源站。
 
-实际测试结果是不会。也就是说，Cloudflare 不开启回写时，源站不会收到用户伪造出来的 `CF-IPCountry`。
-
-这个结论很重要：
+实际测试结果是不会。Cloudflare 不开启回写时，源站不会收到用户伪造出来的 `CF-IPCountry`。
 
 ```text
 CF-IPCountry 缺失，只能说明 Cloudflare 没给这个信息；
@@ -116,7 +114,7 @@ CF-IPCountry 缺失，只能说明 Cloudflare 没给这个信息；
 
 ## 问题三：能不能绕过 Cloudflare 直连后端，然后注入 `CF-*` Header
 
-这个是最需要防的。
+主要风险来自绕过 Cloudflare 直连源站。
 
 如果攻击者知道源站真实 IP，直接请求源站：
 
@@ -154,7 +152,7 @@ Cloudflare 官方也明确提醒过：如果有人发现了源站 IP，就可以
 
 ## Cloudflare 的签名 / 校验机制：Authenticated Origin Pulls
 
-Cloudflare 提供的回源身份校验机制叫 Authenticated Origin Pulls，简称 AOP。本质是 mTLS，不是简单加一个 secret header。
+Cloudflare 的回源身份校验机制叫 Authenticated Origin Pulls，简称 AOP。它通过 mTLS 验证回源连接的客户端证书。
 
 开启后，Cloudflare 回源时会带客户端证书，源站验证这个证书。验证通过，说明请求确实来自 Cloudflare 的回源链路。
 
@@ -168,11 +166,11 @@ AOP 有三种级别：
 2. Zone-level：使用你上传的证书，可以证明“来自你的 zone 配置”。
 3. Per-hostname：按 hostname 配证书，粒度更细。
 
-如果只是想挡住普通直连攻击，Global AOP 已经比单纯 Header 可靠很多；如果要更严格地区分是不是你自己的 Cloudflare 配置，应该用 Zone-level 或 Per-hostname。
+Global AOP 可以拦截普通直连攻击；Zone-level 或 Per-hostname 还能进一步确认请求来自自己的 Cloudflare 配置。
 
 ## AOP 可靠吗？会被破解吗？
 
-我的理解：AOP 本身可靠性很高，真正风险通常不在“破解 mTLS”，而在配置错误。
+AOP 使用成熟的 mTLS 机制，实际风险主要来自配置错误。
 
 原因是：
 
@@ -207,9 +205,9 @@ Cloudflare 代理
 
 1. 用户正常经过 Cloudflare 时，自己伪造 `CF-IPCountry`、`CF-Connecting-IP`，不会被源站当成可信 Cloudflare Header。
 2. Cloudflare 不开启回写时，用户自己加 `CF-IPCountry`，也不会穿透给服务端网关。
-3. 真正要防的是绕过 Cloudflare 直连源站；这个要靠 Cloudflare IP allowlist、防火墙和 Authenticated Origin Pulls/mTLS。
+3. 主要风险是绕过 Cloudflare 直连源站；可以使用 Cloudflare IP allowlist、防火墙和 Authenticated Origin Pulls/mTLS 防护。
 
-所以我的结论是：
+使用原则如下：
 
 ```text
 CF-* / CloudFront-* 这类 IP Header 可以用，

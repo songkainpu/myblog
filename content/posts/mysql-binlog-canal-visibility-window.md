@@ -12,7 +12,7 @@ categories: ["技术"]
 
 低流量时一切正常，流量上来后却偶尔出现一种反直觉的现象：Canal 已经收到 `INSERT`，消费者立即回查同一台主库却返回空，稍后重试又能查到。
 
-第一反应往往是“数据页还没刷盘”，但这个解释经不起推敲：查询能否看到一条记录，判断的是事务可见性，并不要求脏页已经落盘。既然不是刷盘延迟，就需要继续沿着 MySQL 提交、Binlog Dump 和 Canal 投递这几条链路往下找。
+查询能否看到一条记录取决于事务可见性，不要求脏页已经落盘，因此“数据页还没刷盘”无法解释这个现象。排查范围需要覆盖 MySQL 提交、Binlog Dump 和 Canal 投递三条链路。
 
 > 源码基线：MySQL 8.0.46、Canal `87be50e`
 
@@ -106,7 +106,7 @@ if (log_pos < end_pos)
 send_events(log_cache, end_pos);
 ```
 
-它判断的是“这段 Binlog 是否已发布为可读取”，而不是“生成这段 Binlog 的 InnoDB 事务是否已提交”。因此，在 `binlog_end_pos` 发布之后，Dump 线程和提交线程会并发推进：
+它只检查这段 Binlog 是否已经发布为可读取，不检查对应的 InnoDB 事务是否已经提交。因此，在 `binlog_end_pos` 发布之后，Dump 线程和提交线程会并发推进：
 
 ![Binlog 发布后 Dump 链路与 InnoDB 提交链路并发推进的时序](/images/posts/mysql-binlog-canal-visibility-window/03-dump-commit-race.png)
 
@@ -158,7 +158,7 @@ case TRANSACTIONEND:
 
 ![半同步 AFTER_SYNC 在 Binlog 同步与 InnoDB 提交之间等待 ACK 的时序](/images/posts/mysql-binlog-canal-visibility-window/04-after-sync-window.png)
 
-网络 RTT、副本写入或 ACK 处理越慢，这个窗口就越长。这也是线上最容易观察、用 GDB 最容易稳定复现的模式。
+网络 RTT、副本写入或 ACK 处理越慢，这个窗口就越长。因此，`AFTER_SYNC` 模式在线上更容易观察，也更容易用 GDB 稳定复现。
 
 ### 半同步 `AFTER_COMMIT`
 
@@ -200,7 +200,7 @@ break ReplSemiSyncMaster::commitTrx
 continue
 ```
 
-虽然 MySQL 8.0 的配置变量已经采用 `source/replica` 术语，源码类名仍保留 `ReplSemiSyncMaster`。这个函数不是 InnoDB commit，而是半同步插件等待副本 ACK 的位置。
+虽然 MySQL 8.0 的配置变量已经采用 `source/replica` 术语，源码类名仍保留 `ReplSemiSyncMaster`。这个函数属于半同步插件，用于等待副本 ACK；InnoDB commit 在其他位置执行。
 
 Session 1 执行：
 
@@ -229,7 +229,7 @@ bgc_after_sync_stage_before_commit_stage
 
 ## 为什么高流量时更容易出现
 
-问题并非高流量时才产生。高流量只是同时增加了窗口的数量和长度。
+低流量下也存在这个窗口。高流量会同时增加窗口的数量和长度。
 
 ### 命中小窗口的机会变多
 
@@ -272,13 +272,13 @@ bgc_after_sync_stage_before_commit_stage
 | 行锁等待、死锁检测 | 会 | 通常不会，完整事务尚未发布 |
 | Binlog fsync | 会 | `sync_binlog=1` 时通常发生在发布前 |
 | Redo prepare/flush | 会 | 很多工作发生在发布前 |
-| 脏页后台刷盘 | 可能造成系统压力 | 不是可见性的直接条件 |
+| 脏页后台刷盘 | 可能造成系统压力 | 与可见性没有直接关系 |
 | `AFTER_SYNC` 等待 ACK | 会 | **会，而且很直接** |
 | Commit queue/线程调度 | 会 | **会** |
 
 ## 线上如何确认
 
-最有价值的证据，是把 Canal 收到时间、GTID 和主库提交状态放进同一条链路日志。
+确认这个问题时，应把 Canal 收到时间、GTID 和主库提交状态记录在同一条链路日志中。
 
 ### 记录必要字段
 
@@ -336,7 +336,7 @@ SHOW GLOBAL STATUS LIKE 'Threads_running';
 
 ### 方案一：直接使用 Binlog after image
 
-这是最推荐的做法。如果下游需要的字段已经在 Canal 的 `afterColumns` 中，就直接处理事件内容，不再回查主库。
+优先使用这种做法。如果下游需要的字段已经在 Canal 的 `afterColumns` 中，就直接处理事件内容，不再回查主库。
 
 优点很直接：
 
@@ -360,15 +360,15 @@ SELECT WAIT_FOR_EXECUTED_GTID_SET(:event_gtid, :timeout);
 
 ### 方案三：仅对查空进行有限退避
 
-工程上最容易落地的办法是：
+有限退避通常容易接入现有消费逻辑：
 
 ```text
 第一次查空 → 5 ms → 20 ms → 50 ms → 100 ms → 延迟队列/告警
 ```
 
-重试应满足四个条件：有总时间预算、操作幂等、只对符合特征的查空重试、超限后进入延迟队列而不是无限阻塞消费线程。
+重试应满足四个条件：有总时间预算、操作幂等、只对符合特征的查空重试，超限后进入延迟队列，避免无限阻塞消费线程。
 
-携程案例最终采用了固定延迟 1 秒。它能缓解问题，但固定 sleep 不是提交证明；有限退避或 GTID 屏障更稳妥。
+携程案例最终采用了固定延迟 1 秒。它能缓解问题，但无法证明事务已经提交；有限退避或 GTID 屏障更稳妥。
 
 ### 方案四：谨慎使用 locking read
 
@@ -396,7 +396,7 @@ SELECT * FROM orders WHERE id = ? FOR SHARE;
 
 ## 总结
 
-这个问题的本质不是数据页没有刷盘，而是 MySQL 存在两个不同的完成时刻：
+这个问题来自 MySQL 提交链路中的两个完成时刻：
 
 ```text
 Binlog 已经可以被 Dump/Canal 读取
@@ -406,4 +406,4 @@ InnoDB 事务已经对主库其他会话可见
 
 MySQL 会先把包含 XID 的完整事务写入并发布到 Binary Log，随后再进入 InnoDB engine commit。异步复制和 `AFTER_COMMIT` 都存在短暂的基础竞态；`AFTER_SYNC` 则在两者之间增加了 ACK 等待，最容易放大这个窗口。
 
-正确的治理方向，是减少事件后的数据库回查，或显式建立 GTID 可见性屏障。不要依赖“正常情况下 commit 应该更快”，也不要把固定延迟或切换复制模式当作严格的正确性保证。
+治理时应减少事件后的数据库回查，或显式建立 GTID 可见性屏障。“正常情况下 commit 应该更快”、固定延迟和切换复制模式都无法提供严格的正确性保证。
