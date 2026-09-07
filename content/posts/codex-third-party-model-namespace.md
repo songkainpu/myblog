@@ -11,7 +11,7 @@ cover:
   relative: false
 ---
 
-为了节省调用成本，我把日常写代码使用的模型从 OpenAI GPT 切到了公司网关后的 DeepSeek。原以为只需要改一下 `base_url` 和模型名，Codex 升级后却突然变成了每发一条消息就报错：
+公司现在什么都讲究省钱，而且是每一分钱都要省。模型调用费当然也不能例外，所以我一直使用 Codex + DeepSeek。休了几天假回来，Codex 升级后却突然变成了每发一条消息就报错：
 
 ```text
 unknown tool type: namespace
