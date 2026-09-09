@@ -13,6 +13,8 @@ Hologres 实例在阿里云新加坡。从 AWS 新加坡的机器访问没问题
 
 一开始怀疑是升级后加密算法不兼容，但地域差异又让人有点困惑：连的都是新加坡的 Hologres，为什么换个地方就不行了？
 
+![Go 应用通过跨区网络与 Hologres 建立混合后量子密钥交换连接](/images/posts/go-1-23-hologres-tls-kyber/hero.png)
+
 最后，在应用启动时加了一个环境变量，连接就恢复了：
 
 ```bash
