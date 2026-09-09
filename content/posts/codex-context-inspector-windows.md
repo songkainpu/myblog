@@ -2,84 +2,38 @@
 title: "给 Codex Desktop 加一个 Context 用量仪表盘：Windows 和 macOS 实现"
 date: 2026-08-20T00:00:00+08:00
 draft: false
-description: "为 Codex Desktop 提供 Windows 和 macOS 原生悬浮 Context Inspector，展示准确 Context 总量与带证据等级的本地估算。"
+description: "为 Codex Desktop 提供 Windows 和 macOS 原生悬浮 Context Inspector，展示当前 Context 用量，并估算 Skill、MCP 工具和对话内容的占用。"
 tags: ["Codex", "Context", "Windows", "macOS", "插件", "WPF", "AppKit"]
 categories: ["技术"]
 ---
 
-本文记录一个 Windows 和 macOS 本地实验项目：在 Codex Desktop 输入框附近持续显示当前 Context 使用情况，并进一步拆解 Skill、MCP server/tool、消息和工具结果的大致占用。
+长时间使用 Codex Desktop 处理一个任务时，系统指令、Skill、MCP 工具定义、对话历史和工具结果会逐渐占用 Context。一个使用百分比能告诉我窗口还剩多少空间，但无法解释这些空间主要用在了哪里。
 
-## 为什么想做这件事
+我做了一个本地实验项目 **Codex Context Inspector**，在 Codex Desktop 输入框附近显示 Context 用量，展开后可以查看分类明细。Windows 版使用 WPF，macOS 版使用 AppKit；两端采用相同的数据口径。
 
-短任务里，我们通常不会在意 Context。提需求、改代码、跑测试，一轮工作很快结束。
+## 界面：用量常驻，明细按需展开
 
-但当一个 Codex task 持续几小时甚至几天，Context 就不再只是底层模型概念，而会变成一种需要管理的工作资源。系统指令、项目规则、对话历史、工具调用、Skill 指令、MCP tool schema，以及历史压缩生成的摘要，都在共享同一个有限窗口。
+平时，Inspector 只显示一个紧凑的悬浮标签，例如 `Context 37.3%`。鼠标悬停时展开详情，点击后可以固定面板，方便在工作过程中查看。
 
-这时我经常想知道：
+![macOS Context Inspector 完整界面截图](/images/codex-context-inspector-macos-overview.png)
 
-- 当前 task 到底用了多少 Context？
-- 距离窗口上限还有多远？
-- 最近安装的 Skill 或启用的 MCP server，大约增加了多少负担？
-- 是哪一类工具结果正在快速挤占空间？
-- 现在应该继续工作、主动 compact，还是另开一个 task？
+*macOS 版的悬浮标签和详情面板。截图中的对话内容已做模糊处理。*
 
-百分比只能说明 Context 还剩多少，无法看出空间被哪些内容占用。
+面板分为两部分：上半部分显示当前输入 token 数、模型窗口大小、剩余空间和缓存输入；下半部分估算系统指令、Skill、MCP 工具、消息和工具结果的占用。Skill 可以逐项查看，MCP 工具可以按 server 和 tool 展开。
 
-于是，最初“在输入框旁边放一个 Context 按钮”的小想法，逐渐变成了一个 Context 可观测性工具。
+![macOS Context Inspector 详情面板](/images/codex-context-inspector-macos-details.png)
 
-## 最终做出来的东西
+*总量来自 Codex 本地记录，分类估算用 `≈` 标识。*
 
-这个实验项目叫 `Codex Context Inspector`。它在 Codex Desktop 的输入框附近显示一个紧凑状态，例如：
+这些信息适合用来观察 Context 的构成和变化。例如，工具结果的估算占比较高时，可以进一步检查是否有大量输出留在会话中。分类数字只能提供线索，不能作为逐项计费依据。
 
-```text
-Context 37.3%
-```
+## 数据口径：总量取自记录，分项依靠估算
 
-悬停或点击后，可以继续查看：
+Inspector 能直接读取 Codex 记录的输入 token 数，但无法取得每个 Skill、每个工具结果的精确占用。因此，总量和分类明细需要分开理解。
 
-- 当前输入 Context；
-- 模型窗口大小；
-- 剩余空间与缓存输入；
-- 系统指令、Skill、MCP 工具、消息和工具结果的本地估算；
-- 每一个可见 Skill 的估算；
-- 按 MCP server 和 tool 展开的估算。
+### 当前用量取最新一次输入
 
-面板大致如下：
-
-```text
-Context usage                         37.3%
-Current input                         96.3k
-Model window                         258.4k
-Remaining                            162.1k
-Cached input                          94.0k
-
-Estimated breakdown
-System & policies                  ≈   7.0k
-Skills                             ≈   4.5k
-MCP / plugin tools                ≈   7.5k
-User messages                     ≈   1.4k
-Assistant messages                ≈   0.9k
-Other tool results                ≈  52.6k
-Compaction summary                ≈   3.6k
-Unattributed / hidden             ≈   2.0k
-```
-
-整个工具在本机运行，不把会话内容上传到外部服务。
-
-目前有两个原生 sidecar：Windows 版使用 .NET 8 WPF，macOS 版使用 Swift + AppKit。两端共用核心数据模型和 Skill 查询协议，Context 的证据等级和计算语义保持一致。
-
-## 数值分为四种证据等级
-
-面板会标明每个数字的来源和可信程度，共分为四类：
-
-| 类型 | 含义 | 示例 |
-| --- | --- | --- |
-| Exact | 直接来自 Codex 本地 token 记录 | 当前输入、缓存输入、模型窗口 |
-| Derived | 由准确字段确定性计算 | 剩余空间、使用百分比 |
-| Estimated | 根据本地可见记录估算 | Skill、MCP tool、消息和工具结果 |
-| Unavailable | 当前没有足够证据 | 无法识别的数据结构 |
-
-准确总量的计算很简单：
+Codex 的本地会话记录是 rollout JSONL 文件。Inspector 从中读取最新的 `event_msg/token_count`，使用以下字段计算用量：
 
 ```text
 used       = last_token_usage.input_tokens
@@ -88,229 +42,99 @@ remaining  = max(0, window - used)
 percent    = used / window × 100%
 ```
 
-`total_token_usage` 表示整个 session 的累计消耗，可能远大于模型窗口。当前请求携带的 Context 应读取最新的 `last_token_usage.input_tokens`。
+这里使用 `last_token_usage.input_tokens`，因为它表示最近一次请求的输入量。`total_token_usage` 是整个 session 的累计消耗，可能远大于模型窗口，不能用来计算当前 Context 百分比。
 
-至于 Skill 和 MCP tool 的逐项占用，Codex 并没有直接提供精确账单。因此面板统一用 `≈` 标识，并采用一个透明的近似：
+因此，面板展示的是**最近一次已记录请求的 Context 用量**。这里的“准确”指直接采用 Codex 记录的数字，不代表能实时测量尚未发送的输入内容。
+
+### 分类明细用于观察量级
+
+Skill、MCP 工具、消息和工具结果的分项数据来自本地可见内容，采用统一的粗略换算：
 
 ```text
 estimated_tokens ≈ ceil(UTF-8 bytes / 4)
 ```
 
-`UTF-8 bytes / 4` 只用于观察相对量级，不能代表某个 Skill 实际占用的精确 token 数。
+这不是模型的实际 tokenizer，不同语言和内容类型都可能产生误差。面板用四种标签区分数据来源：
 
-## 为什么是插件加原生 Overlay
+| 标签 | 含义 | 示例 |
+| --- | --- | --- |
+| Exact | 直接来自 Codex 本地记录 | 当前输入、缓存输入、模型窗口 |
+| Derived | 由记录中的字段计算 | 剩余空间、使用百分比 |
+| Estimated | 根据本地可见内容估算 | Skill、MCP 工具、消息和工具结果 |
+| Unavailable | 缺少足够证据 | 无法识别或读取的数据 |
 
-插件适合打包 Skill、Hooks、sidecar 和安装信息，但这个实验没有通过受支持的扩展点把按钮直接注入 Codex Desktop 的 composer。
+历史记录还可能包含已经被 compact 掉的内容，直接相加会高估当前占用。Inspector 会先计算原始估算；当估算之和超过当前总量时，按比例缩放各项。无法由可见内容解释的差额归入 `Unattributed / hidden`，各层明细之和与总量保持一致。
 
-UI 由独立的原生 sidecar 提供，Codex 安装文件、DLL 和 Chromium 内部 DOM 都保持不动。Windows 版使用 .NET 8 WPF：
+这种对齐只保证展示上的数值一致，不能恢复模型当前实际携带的全部内容，也不会让分类估算变得精确。
 
-- 使用 Windows UI Automation 定位 Codex 窗口和输入框；
-- 用一个不抢焦点的透明 Overlay 跟随输入框移动；
-- 从本机会话记录读取 Context 数据；
-- 通过当前用户专用的命名管道，让 Skill 和 Overlay 共用同一份报告。
+## 实现：独立悬浮窗连接本地会话数据
 
-macOS 版使用 Swift + AppKit：
-
-- 通过 `com.openai.codex` bundle identifier 和屏幕窗口信息找到 Codex；
-- 在用户授予 Accessibility 权限后，遍历 Accessibility tree 定位 composer；
-- 使用不激活的 `NSPanel` 显示悬浮 pill 和详情面板，不抢走 Codex 的键盘焦点；
-- 通过 Unix Domain Socket 与 Hook、Skill 和后台 sidecar 通信；
-- 使用 Universal 2 构建，同时支持 arm64 和 x86_64。
-
-整体关系可以简化为：
+项目由插件和一个独立运行的原生辅助程序（sidecar）组成。插件负责打包 Skill、Hooks 和安装信息；sidecar 负责窗口定位、读取数据和展示面板。界面使用原生悬浮窗，不修改 Codex 安装文件，也不向内部 DOM 注入按钮。
 
 ![Codex Context Inspector 跨平台架构图](/images/codex-context-inspector-architecture.svg)
 
-*跨平台实现共享同一套 Context 数据语义，平台差异集中在窗口定位、IPC 和 sidecar UI。*
+*两端采用相同的数据口径，分别实现窗口定位、悬浮界面和本地通信。*
 
-这个方案把插件能力和桌面 UI 解耦，侵入性较低，但也带来明确代价：UI Automation、Accessibility tree、Desktop activity log 和 rollout JSONL 都属于兼容面，宿主更新后可能需要适配。
+数据展示经过三个步骤：定位前台 Codex 窗口，确认窗口对应的任务，再读取该任务的 token 记录。
 
-## macOS 端：把 Windows Overlay 换成原生 AppKit
+### 先确认当前任务
 
-Windows 和 macOS 共用同一套 Context 证据模型：最新的 `event_msg/token_count` 提供准确总量，Skill、MCP tool、消息和工具结果使用带 `≈` 的本地估算。macOS 端单独实现窗口定位、进程间通信和打包。
+本地可能有多个任务同时写入记录。最近修改的 JSONL 文件可能属于后台任务，因此不能仅凭文件时间选择数据源。
 
-紧凑状态会直接显示在 Codex 窗口附近，颜色表示当前使用比例：
+Inspector 使用当前窗口的活动状态和会话身份建立绑定。Windows 版优先接收宿主 Hook 提供的 `session_id` 和 `transcript_path`，也支持从 Desktop activity log 读取 `conversationId`。本文实现的 macOS 版本主要使用 Desktop activity log，Hook 保留为兼容路径。
 
-![macOS Context Inspector 完整界面截图](/images/codex-context-inspector-macos-overview.png)
+取得候选身份后，还需要校验会话文件：路径必须位于允许的 sessions 目录内，文件名中的 ID 和首条 `session_meta.payload.id` 都必须与候选身份一致。校验通过后，才读取其中的 Context 数据。
 
-*macOS 端完整界面：详情面板和 Context pill 都悬浮在 Codex Desktop 窗口上方。截图中的对话内容已做模糊处理。*
+![Codex Context Inspector 当前 task 绑定流程](/images/codex-context-inspector-task-binding.svg)
+
+*窗口、任务身份和会话文件匹配后，才更新面板。*
+
+无法确认当前任务时，面板进入等待状态；如果保留了上一次确认的数据，则将其标记为旧快照。缺少数据不会被当成 Context 使用量为 0。
+
+### 再读取最新用量
+
+长任务的会话文件可能很大。读取器最多扫描文件尾部 8 MiB，从后向前寻找最新的合法 token 事件，并跳过尚未写完的记录。结果按文件长度和修改时间缓存，避免每次刷新都重新扫描。
+
+悬浮面板与 Skill 查询共用同一份报告，因此在界面中查看和通过 Skill 查询时，数据口径一致。
+
+## Windows 与 macOS 的平台实现
+
+两个版本的主要差异在桌面集成部分：
+
+| 部分 | Windows | macOS |
+| --- | --- | --- |
+| 原生界面 | .NET 8 WPF 透明 Overlay | Swift + AppKit `NSPanel` |
+| 输入框定位 | Windows UI Automation | Accessibility tree |
+| 本地通信 | 当前用户专用命名管道 | 当前用户专用 Unix Domain Socket |
+| 支持范围 | Windows 10/11 x64 | macOS 13+，arm64 / x86_64 |
+
+两端的悬浮窗都尽量保留 Codex 的键盘焦点，让用户查看用量后继续输入。Codex 不在前台或窗口不可见时，面板会隐藏或进入等待状态。
+
+macOS 版需要在“系统设置 → 隐私与安全性 → 辅助功能”中授予权限，以读取 Codex 窗口的结构和位置。无法定位输入框时，面板退回窗口内的备用位置，并标明定位状态。
 
 ![macOS Context Inspector 紧凑悬浮窗](/images/codex-context-inspector-macos-pill.png)
 
-*macOS 原生 pill：绿色表示当前使用比例处于较低区间。*
+*macOS 版的紧凑标签支持拖动，并保存相对窗口锚点的偏移。*
 
-点击 pill 后可以固定详情面板，查看准确总量以及带 `≈` 标记的本地估算明细：
-
-![macOS Context Inspector 详情面板](/images/codex-context-inspector-macos-details.png)
-
-*详情面板同时展示 Codex 报告的精确字段和 Skills、MCP tools、消息、工具结果等估算项。*
-
-### 1. 为什么选择 Swift + AppKit
-
-macOS UI 使用 AppKit 的 `NSPanel`，让面板悬浮在 composer 附近，同时保留 Codex 的键盘焦点：
-
-- 紧凑 pill 是 borderless、non-activating panel；
-- 鼠标悬停时展开详情，点击可以 pin；
-- 拖动 pill 会保存相对 anchor 的偏移，重启后继续使用；
-- Codex 不在前台、窗口不可见或无法确认时，面板会隐藏或进入等待状态；
-- 如果没有可靠的 composer bounds，面板会退回 Codex 窗口内的安全位置，并明确不宣称自己绑定到了输入框。
-
-### 2. Accessibility 权限只用于定位界面
-
-要把 pill 放到输入框附近，macOS sidecar 需要用户在“系统设置 → 隐私与安全性 → 辅助功能”中授予 Accessibility 权限。sidecar 只读取 Codex 窗口的结构和几何位置。
-
-sidecar 会优先寻找前台、聚焦的 Codex 窗口，再在有限深度和节点数内寻找下半部分的可编辑文本区域。无法取得权限时仍可运行，但只能使用窗口级 fallback anchor；这时状态会显示为等待或低置信度定位。
-
-### 3. macOS 上的当前 task 绑定
-
-macOS 当前 Codex Desktop 版本的 `plugin_hooks` feature 已移除，因此 macOS 版不能把 Hook 当成唯一入口。它的主要路径是读取本地 Desktop activity log：
-
-```text
-~/Library/Logs/com.openai.codex/YYYY/MM/DD/
-```
-
-解析器寻找同时满足 `active=true`、`rendererWindowFocused=true`、`rendererWindowVisible=true` 的 `conversationId`，再做两层校验：rollout 文件名必须匹配这个 ID，文件首条 `session_meta.payload.id` 也必须匹配。只有证据链完整时，才会显示对应 session 的 Context。
-
-Hook launcher 仍然保留，作为未来或其他宿主版本重新提供 Hooks 时的兼容路径；当前 macOS 运行不依赖它。这和 Windows 版“Hook 优先、Desktop log fallback”的路径略有不同，但最后都遵守同一个原则：无法确认属于当前 task，就保持 Unknown。
-
-### 4. 本地通信和安装
-
-Windows sidecar 使用当前用户专用命名管道，macOS sidecar 使用当前用户专用的 Unix Domain Socket：
-
-```text
-/tmp/codex-context-inspector-<uid>/inspector.sock
-```
-
-运行时目录是 `0700`，socket 是 `0600`，并且会校验 peer uid；Hook 失败时 fail-open，不阻塞 Codex。macOS 构建产物是一个 Universal 2 app bundle，个人安装脚本会把它复制到稳定路径：
-
-```text
-~/Applications/Codex Context Inspector.app
-```
-
-稳定路径有一个实际好处：重新刷新插件缓存时，Accessibility 对这个 app identity 的授权更不容易反复失效。开发环境可以在仓库根目录执行：
+macOS 版提供 Universal 2 构建。开发环境可在项目仓库根目录执行：
 
 ```sh
 scripts/build-macos.sh
 scripts/install-personal-macos.sh
 ```
 
-安装后首次启动需要按系统提示授予 Accessibility 权限，再重新打开或新建一个 Codex task。macOS 端的 Skill helper、`--inspect-active`、`--inspect-session`、`--probe`、`--self-test` 和 `--log-path` 与 Windows 版保持同一组职责。
+安装脚本会将应用复制到 `~/Applications/Codex Context Inspector.app`。固定安装路径有助于保留辅助功能授权，减少插件缓存更新后的重复配置。首次启动后按系统提示授予权限，再重新打开或新建一个 Codex 任务。
 
-### 5. macOS 版当前做到什么程度
+## 使用边界
 
-现在 macOS 端已经具备：
+Inspector 在本机读取和处理会话数据，不向外部服务上传内容。插件诊断日志不记录 prompt、assistant message、命令或工具输出；路径会脱敏，任务和 session ID 只保留前缀。
 
-- Swift Core reader、attribution estimator、session resolver 和 transcript validator；
-- 精确 Context 总量与明确标记的分类估算；
-- 原生 pill、详情面板、悬停展开、点击 pin、拖动定位和 stale snapshot 展示；
-- Accessibility 缺失时的安全 fallback；
-- 诊断日志、Unix Socket IPC、Universal 2 构建和本地安装脚本；
-- 与 Windows 相同的本地隐私边界：不发网络请求，不把 prompt、assistant 内容和 tool 输出写入插件日志。
+项目仍处于实验阶段，使用时需要考虑以下限制：
 
-这里的“macOS 支持”指的是当前仓库中的本地 sidecar 和插件安装链路已经实现，不代表 Codex Desktop 的本地 JSONL、Desktop activity log 或 Accessibility tree 已经成为稳定公开 API。
+- **依赖非公开接口。** Desktop activity log、rollout JSONL 和可访问性树可能随 Codex Desktop 更新而变化，需要持续适配。
+- **分类数据是粗略估算。** 它适合观察相对量级，不能提供精确的 token 归因。
+- **复杂桌面环境仍需验证。** Windows 多窗口、混合 DPI、休眠恢复，以及 macOS 多 Space、权限变更和日志轮转，还需要更长期的测试。
 
-## 当前 task 绑定：从窗口到 rollout 的实现
+如果后续 Codex 提供稳定的当前任务用量接口，可以替换本地日志和会话文件的读取部分，保留现有的面板与分类展示。
 
-Context Inspector 先确定用户当前看到的 Codex 窗口，再把窗口信号解析成候选 `conversationId` 或 session 元数据。这样可以避免仅凭 JSONL 的最近修改时间误绑到后台 task。
-
-Windows 端通过 UI Automation 找到前台 Codex 窗口和 composer；macOS 端优先使用 `com.openai.codex` 的前台窗口、Accessibility focused window 和 `CGWindow` 信息。两端都只接受 active、focused、visible 的窗口，避免把后台 task 当成当前 task。
-
-当前版本的绑定步骤是：
-
-1. **取得候选身份**：Windows/macOS 读取 Desktop activity log 的 `conversationId`；宿主仍提供 Hooks 时，再把 Hook 的 `session_id` 和 `transcript_path` 作为强绑定兼容路径。
-2. **校验 transcript 路径**：路径必须位于允许的 Codex sessions root 下，扩展名为 `.jsonl`，并拒绝路径逃逸和符号链接。
-3. **校验 rollout 文件名**：文件名中的 session ID 必须与候选 `conversationId` 一致。
-4. **校验首条元数据**：rollout 首条 `session_meta.payload.id` 必须再次匹配，不能只相信文件名。
-5. **读取 token snapshot**：身份校验通过后，才从该 rollout 读取最新 `event_msg/token_count`，并更新 Overlay 与 Context Usage Skill。
-
-如果任一步无法确认，绑定状态就是 `Unbound`，Overlay 保持等待或显示上一次已确认的 snapshot，不会用另一个 task 的数据填充当前面板。
-
-![Codex Context Inspector 当前 task 绑定流程](/images/codex-context-inspector-task-binding.svg)
-
-*当前 task 绑定先确认窗口和 session 身份，再决定是否展示 Context。*
-
-## 如何读取当前 Context
-
-`RolloutUsageReader` 从 session rollout JSONL 的尾部寻找最新 `event_msg/token_count`，再读取其中的 `last_token_usage` 和 `model_context_window`。
-
-实现中还做了几层保护：
-
-- 最多扫描文件尾部 8 MiB，避免长 session 每次全量读取；
-- 使用共享读取，不阻塞 Codex 继续写入；
-- 起点落在半条记录时丢弃残段；
-- 从后向前寻找最新合法 token event；
-- 忽略部分写入的末行；
-- 按文件长度和修改时间缓存结果。
-
-这里的“准确”只表示数值直接来自 Codex 当前记录。本地 JSONL 格式仍属于非公开接口，后续版本可能变化。
-
-## 分项估算如何与准确总量对齐
-
-归因模块会从本地可见记录中寻找这些证据：
-
-- 基础指令；
-- Skill catalog 与已加载的 `SKILL.md`；
-- MCP server/tool schema；
-- tool call 参数与输出；
-- user/assistant message；
-- compaction replacement history。
-
-但历史 JSONL 中可能仍包含已经被 compact 掉的记录，所以原始估算之和可能大于当前准确总量。
-
-为避免面板出现“分项相加超过总量”的假象，算法会：
-
-1. 先计算各类可见证据的原始估算；
-2. 把可见目标限制为 `min(exact_used, raw_total)`；
-3. 按原始权重分摊到类别、server 和 tool；
-4. 将无法解释的差额放入 `Unattributed / hidden`；
-5. 保证每层子项之和与父项一致。
-
-因此，面板展示的是一张与准确总量对齐的“可见证据地图”。其中的分类数据仍是估算值，不能当作精确的 token 账单。
-
-## 日志把“空数据”变成了可诊断问题
-
-早期版本没有结构化日志，UI 上一个 0 可以对应十几种原因。后来我给定位、绑定、读取和展示各自增加了状态记录，包括：
-
-- sidecar 生命周期；
-- UIA 定位失败原因；
-- Hook 是否到达和被接受；
-- Desktop log fallback 状态；
-- task/session 绑定变化；
-- snapshot 与异常 0 值；
-- Skill 查询结果。
-
-日志不记录 prompt、assistant message、命令和 tool output；路径会脱敏，task 和 session id 只保留前缀。
-
-这次故障最终就是靠下面几类事件串起来的：
-
-```text
-ui.unbound
-hook.received             # 新 task 中缺失
-fallback.desktop_log_status = resolved
-fallback.binding_updated
-snapshot.displayed
-```
-
-这些事件可以直接显示故障发生在窗口定位、task 绑定、数据读取还是 UI 展示环节。
-
-## 已知限制
-
-Windows 和 macOS 的当前实现仍处于实验阶段：
-
-- Windows 目前只面向 Windows 10/11 x64；macOS 目前面向 macOS 13+ 的 arm64/x86_64；两者都依赖 Codex Desktop；
-- Windows UIA 和 macOS Accessibility 都依赖当前 Desktop 的可访问性树；
-- Desktop activity log 和 rollout JSONL 属于非公开接口，格式可能随版本变化；
-- UTF-8/4 仅提供粗略估算，所有分类和明细都带有误差；
-- attribution 会在本地读取有界 transcript 内容；
-- Windows 的多窗口、混合 DPI、休眠恢复，以及 macOS 的多 Space、权限变更和日志轮转仍需更长期测试；
-
-如果未来 Codex 提供稳定的 active-task token usage 接口，本地日志与 transcript adapter 应该优先被替换；macOS 的 Accessibility 定位也可以退化成更简单、受支持的窗口锚点。
-
-## 代码仓库
-
-- [codex-context-inspector](https://github.com/songkainpu/codex-context-inspector)
-
-## 参考资料
-
-- [OpenAI：Plugins](https://learn.chatgpt.com/docs/plugins)
-- [OpenAI：Hooks](https://learn.chatgpt.com/docs/hooks)
+代码与安装说明见 [codex-context-inspector 仓库](https://github.com/songkainpu/codex-context-inspector)。
