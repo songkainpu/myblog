@@ -23,6 +23,12 @@ hasCJKLanguage = true
   ShowToc = true
   TocOpen = false
 
+  [params.assets]
+    favicon = "favicon-32x32.png"
+    favicon16x16 = "favicon-16x16.png"
+    favicon32x32 = "favicon-32x32.png"
+    apple_touch_icon = "apple-touch-icon.png"
+
   [params.homeInfoParams]
     Title = "Hi 👋"
     Content = "欢迎来到我的博客，这里会记录我的技术探索与日常思考。"
