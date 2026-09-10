@@ -1,5 +1,5 @@
 ---
-title: "CDN 回源 IP Header 能不能信：以 CloudFront 和 Cloudflare 为例"
+title: "CDN 回源 IP Header：常见字段与 Cloudflare 源站防护"
 date: 2026-05-01T02:04:57+08:00
 draft: false
 tags: ["CloudFront", "Cloudflare", "CDN", "安全", "GeoIP"]
@@ -8,11 +8,11 @@ categories: ["技术"]
 
 最近排查了一个和 CDN 回源 Header 有关的问题：源站经常会依赖 CDN 写入的 IP / GeoIP Header 来判断用户真实 IP 或国家地区，例如 Cloudflare 的 `CF-Connecting-IP`、`CF-IPCountry`，以及 AWS CloudFront 的 `CloudFront-Viewer-Address`、`CloudFront-Viewer-Country`。
 
-问题是：这些 Header 到底能不能信？用户能不能自己伪造？如果绕过 CDN 直连源站会怎样？
+源站使用这些字段前，需要确认请求来自可信的 CDN 回源链路。客户端直连源站时也能携带同名 Header，字段名本身不能证明来源。
 
-这篇只关注 IP 相关 Header，不展开设备类型、TLS 指纹、JA3/JA4 那些内容。
+本文先列出 CloudFront 和 Cloudflare 的 IP / GeoIP 字段，再以 Cloudflare 为例说明同名 Header 的处理、直连绕过和源站认证。
 
-## CloudFront 官方是怎么做的
+## CloudFront 的 IP / GeoIP 字段
 
 AWS CloudFront 官方支持在回源请求中添加 Viewer 信息 Header。和 IP / 地理位置相关的主要是：
 
@@ -72,11 +72,11 @@ Cloudflare 官方文档：
 - https://developers.cloudflare.com/fundamentals/reference/http-headers/
 - https://developers.cloudflare.com/rules/transform/managed-transforms/reference/
 
-接下来验证三个问题。
+以下测试区分经过 Cloudflare 代理和直连源站两条路径。
 
-## 问题一：用户能不能伪造 `CF-IPCountry` / `CF-Connecting-IP`
+## 经过 Cloudflare：客户端自带的同名 Header
 
-测试结论：正常经过 Cloudflare 代理时，不会。
+在本次测试中，经过 Cloudflare 代理后，源站收到的是边缘层生成的 IP / GeoIP 值。
 
 比如用户请求时自己加：
 
@@ -85,15 +85,9 @@ CF-IPCountry: US
 CF-Connecting-IP: 1.2.3.4
 ```
 
-如果请求是走 Cloudflare 代理链路到源站，源站不会把这个用户自带的值当成 Cloudflare 注入的可信值。
+源站收到的值由 Cloudflare 根据连接信息和 IP 地理位置结果写入，未采用上述客户端自带值。
 
-这个结果符合 Cloudflare 的设计：`CF-Connecting-IP`、`CF-IPCountry` 由 Cloudflare 在边缘层根据连接信息和 IP 地理位置结果写入回源请求，客户端提供的同名 Header 不作为身份依据。
-
-所以，在“请求确实经过 Cloudflare”的前提下，用户在浏览器或 curl 里手动加 `CF-*` Header，并不能伪造成另一个国家或另一个真实 IP。
-
-## 问题二：如果 Cloudflare 没开启回写，用户自加 `CF-IPCountry` 会不会穿透到服务端网关
-
-测试结论：不会。
+### 未开启位置 Header 回写的情况
 
 假设 Cloudflare 没开 `Add visitor location headers`，用户在请求中加入：
 
@@ -101,18 +95,9 @@ CF-Connecting-IP: 1.2.3.4
 CF-IPCountry: US
 ```
 
-需要确认这个 Header 是否会被当作普通请求头传到源站。
+本次测试中，未开启回写时，源站也没有收到用户自带的 `CF-IPCountry`。
 
-实际测试结果是不会。Cloudflare 不开启回写时，源站不会收到用户伪造出来的 `CF-IPCountry`。
-
-```text
-CF-IPCountry 缺失，只能说明 Cloudflare 没给这个信息；
-不能通过用户自己补一个 CF-IPCountry 来让源站误判国家。
-```
-
-但这里仍然有前提：流量必须经过 Cloudflare。
-
-## 问题三：能不能绕过 Cloudflare 直连后端，然后注入 `CF-*` Header
+## 直连源站：同名 Header 可由客户端构造
 
 主要风险来自绕过 Cloudflare 直连源站。
 
@@ -127,15 +112,13 @@ curl http://源站IP/ \
 
 这时候请求根本没有经过 Cloudflare。源站看到的 Header 就只是普通 HTTP Header。如果后端网关或应用没有判断请求来源，就有可能把这些伪造的 `CF-*` 当真。
 
-所以，前两个问题的答案是“不会”，但第三个问题不能靠 Cloudflare 自动解决。因为攻击者绕过了 Cloudflare。
-
 Cloudflare 官方也明确提醒过：如果有人发现了源站 IP，就可以直接给源站发请求，绕过 Cloudflare 的安全保护。官方建议阻止所有非 Cloudflare IP、非可信合作方或可信应用的流量。
 
 官方文档：
 
 - https://developers.cloudflare.com/fundamentals/concepts/cloudflare-ip-addresses/
 
-## 怎么防直连源站
+## 限制源站入口
 
 最基本的做法：源站防火墙、安全组、负载均衡器只允许 Cloudflare IP 段访问 80/443。
 
@@ -168,19 +151,11 @@ AOP 有三种级别：
 
 Global AOP 可以拦截普通直连攻击；Zone-level 或 Per-hostname 还能进一步确认请求来自自己的 Cloudflare 配置。
 
-## AOP 可靠吗？会被破解吗？
+## AOP 的配置边界
 
 AOP 使用成熟的 mTLS 机制，实际风险主要来自配置错误。
 
-原因是：
-
-- 伪造 HTTP Header 很容易。
-- 伪造 mTLS 客户端证书不容易。
-- 如果攻击者没有对应私钥，无法完成合法的客户端证书认证。
-
-所以从密码学角度看，暴力破解私钥基本不现实。
-
-更现实的风险是这些：
+客户端必须持有对应私钥才能完成证书认证。部署时需要检查以下配置风险：
 
 1. 源站没有真的强制校验客户端证书。
 2. 只在 Cloudflare 开了 AOP，但 Nginx / Ingress / LB 没配好。
@@ -188,28 +163,11 @@ AOP 使用成熟的 mTLS 机制，实际风险主要来自配置错误。
 4. 源站还有其他端口、其他域名、内网转发、旧 IP 可以绕过。
 5. 私钥或证书配置泄露。
 
-所以不能把 AOP 理解成“开关一开就万事大吉”。它应该和源站防火墙一起用。
-
-比较稳的组合是：
+部署时将回源认证与入口限制配合使用：
 
 ```text
 Cloudflare 代理
 + 源站只允许 Cloudflare IP
 + Authenticated Origin Pulls，优先 Zone-level / Per-hostname
 + 应用层只在确认来源可信后读取 CF-* Header
-```
-
-## 结论
-
-这次主要确认了三个点：
-
-1. 用户正常经过 Cloudflare 时，自己伪造 `CF-IPCountry`、`CF-Connecting-IP`，不会被源站当成可信 Cloudflare Header。
-2. Cloudflare 不开启回写时，用户自己加 `CF-IPCountry`，也不会穿透给服务端网关。
-3. 主要风险是绕过 Cloudflare 直连源站；可以使用 Cloudflare IP allowlist、防火墙和 Authenticated Origin Pulls/mTLS 防护。
-
-使用原则如下：
-
-```text
-CF-* / CloudFront-* 这类 IP Header 可以用，
-但只应该在“请求确实来自 CDN”的前提下信。
 ```

@@ -6,42 +6,18 @@ tags: ["生活", "博客"]
 categories: ["随笔"]
 ---
 
-## 欢迎来到我的博客
-
 这是我用 **Hugo + PaperMod + Cloudflare Pages** 搭建的个人博客的第一篇文章。
 
-### 技术栈
+## 博客的搭建方式
 
-- **静态站点生成器**: [Hugo](https://gohugo.io/) —— Go 写的，快到离谱
-- **主题**: [PaperMod](https://github.com/adityatelange/hugo-PaperMod) —— 简洁现代
-- **托管**: [Cloudflare Pages](https://pages.cloudflare.com/) —— 免费 + 全球 CDN
-- **代码仓库**: GitHub
+文章用 Markdown 编写，交给 [Hugo](https://gohugo.io/) 生成静态页面；页面使用 [PaperMod](https://github.com/adityatelange/hugo-PaperMod) 主题，部署在 [Cloudflare Pages](https://pages.cloudflare.com/)，源码保存在 GitHub。
 
-### 为什么选静态博客？
+选择这套搭配，主要是维护方便：写完文章后构建、发布，不需要单独维护数据库和文章管理后台，内容也可以和代码一样做版本管理。
 
-1. **极快** —— 纯 HTML，CDN 分发，毫秒级响应
-2. **免费** —— 托管 0 成本
-3. **安全** —— 没有数据库没有后端，几乎零攻击面
-4. **Markdown 写作** —— 用最顺手的格式记录
-
-### 代码块示例
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("Hello, Blog!")
-}
-```
-
-### 接下来
+## 打算写的内容
 
 打算记录一些：
 
-- 技术探索与踩坑
+- 技术方案、实现笔记与故障排查
 - 读书 / 观影笔记
 - 项目复盘
-
-敬请期待 ✨

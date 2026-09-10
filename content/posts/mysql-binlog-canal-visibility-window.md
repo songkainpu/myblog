@@ -112,7 +112,7 @@ send_events(log_cache, end_pos);
 
 谁先完成，取决于提交队列、线程调度、半同步等待、网络速度以及 Canal/MQ 的处理速度。
 
-## Canal 收到 XID 后发生了什么
+## Canal 对完整事务的投递
 
 Canal 的 `LogEventConvert.parseXidEvent()` 会把 MySQL XID 转换成 `TRANSACTIONEND`：
 
@@ -148,10 +148,6 @@ case TRANSACTIONEND:
 | 半同步 `AFTER_COMMIT` | 可能 | 通常很短 | ACK 在 commit 后，但 Dump 仍可能提前发送 |
 | 半同步 `AFTER_SYNC` | 可能且最明显 | 可能明显变长 | commit 前等待副本 ACK |
 
-### 异步复制
-
-异步复制没有 ACK 等待。Binlog 发布后，Dump 线程与提交线程并发运行，因此理论上仍可能出现，只是窗口通常很短。
-
 ### 半同步 `AFTER_SYNC`
 
 `AFTER_SYNC` 将 ACK 等待放在 Binlog sync 和 engine commit 之间：
@@ -163,10 +159,6 @@ case TRANSACTIONEND:
 ### 半同步 `AFTER_COMMIT`
 
 `AFTER_COMMIT` 把 ACK 等待移到 InnoDB commit 之后，去掉了 commit 前的长等待。但 Dump 线程仍可能在 engine commit 前被唤醒，因此它只能显著缩短窗口，不能从源码上保证窗口为零。
-
-这两种等待点的差别就在这里：
-
-> Binlog 可读取早于 InnoDB commit，是基础提交管线允许的；`AFTER_SYNC` 又在两者之间加入 ACK 等待，将这个竞态放大。
 
 ## 用 GDB 稳定复现
 
@@ -227,7 +219,7 @@ bgc_after_sync_stage_before_commit_stage
 
 也可以在 `update_binlog_end_pos()` 之后、`process_commit_stage_queue()` 之前暂停目标提交线程，同时让 Dump 线程继续运行。
 
-## 为什么高流量时更容易出现
+## 高流量下的窗口数量与长度
 
 低流量下也存在这个窗口。高流量会同时增加窗口的数量和长度。
 
@@ -385,25 +377,3 @@ SELECT * FROM orders WHERE id = ? FOR SHARE;
 `AFTER_COMMIT` 能消除 commit 前的半同步 ACK 等待，通常可以明显降低问题概率，但不能严格保证 Canal 一定晚于 engine commit。
 
 此外，`AFTER_COMMIT` 允许事务先在旧主库对其他会话可见，再等待副本 ACK。如果此时旧主库宕机并发生切换，可能出现“刚才查到的数据在新主库不存在”的故障语义。因此，不能只为降低这个问题的概率就直接切换，必须由 DBA 结合 RPO 和切换策略评估。
-
-对于高吞吐订单链路，我的建议优先级是：
-
-1. 优先使用 Binlog after image，取消不必要的回查；
-2. 必须回查时，确认同一 `server_uuid`，并使用新的 Read View；
-3. 第一次查空后执行有限退避；
-4. 强一致场景增加 GTID barrier，并按实例或分区合并等待；
-5. 持续监控半同步 ACK，以及“消息到达 → GTID 可见”的时间差。
-
-## 总结
-
-这个问题来自 MySQL 提交链路中的两个完成时刻：
-
-```text
-Binlog 已经可以被 Dump/Canal 读取
-                ≠
-InnoDB 事务已经对主库其他会话可见
-```
-
-MySQL 会先把包含 XID 的完整事务写入并发布到 Binary Log，随后再进入 InnoDB engine commit。异步复制和 `AFTER_COMMIT` 都存在短暂的基础竞态；`AFTER_SYNC` 则在两者之间增加了 ACK 等待，最容易放大这个窗口。
-
-治理时应减少事件后的数据库回查，或显式建立 GTID 可见性屏障。“正常情况下 commit 应该更快”、固定延迟和切换复制模式都无法提供严格的正确性保证。

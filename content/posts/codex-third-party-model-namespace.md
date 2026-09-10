@@ -33,8 +33,6 @@ unknown tool type: namespace
 
 清空 browser、computer-use 和 MCP server 等额外工具配置后，Desktop 入口仍然发送 `namespace` 并被网关拒绝，工具数量没有改变请求类型。
 
-差异来自客户端入口及其发出的请求结构。
-
 ## `originator` 决定工具形式
 
 把几个入口发出的请求并排比较后，差异变得很清楚：
@@ -61,7 +59,7 @@ CODEX_INTERNAL_ORIGINATOR_OVERRIDE=codex_exec
 
 我在本机启动了一个 mock server，把 Codex 的 `base_url` 临时指向它，记录实际请求体。在失败请求的 `tools` 数组中，我看到了多个 `namespace` 类型工具：其中包括 multi-agent 工具，也包括被打包成 namespace 的 MCP server。
 
-将 `originator` 切换为 `codex_exec` 后，工具定义变为 `function`，同一个第三方模型可以接受请求。这也解释了为什么 Desktop 和交互式 CLI 一起失败、`codex exec` 却能正常工作，以及 SDK 为什么会报另一个工具类型 `custom`。
+将 `originator` 切换为 `codex_exec` 后，工具定义变为 `function`，同一个第三方模型可以接受请求。这个对照支持了上面的入口差异判断。
 
 抓包时应只记录定位问题所需字段，并对 Authorization、Cookie、提示词和业务数据做脱敏；不要把完整请求日志直接发到公共 issue。
 
@@ -119,7 +117,7 @@ def transform_tools(tools):
 
 如果希望保留能力，可以把 namespace 内的 function 展开到顶层，并为工具名增加 namespace 前缀。完整实现需要同时改写请求和响应：模型返回工具调用后，代理还要把名称映射回原始结构，并正确处理流式响应、并发调用和错误结果。只做单向 flatten 很可能造成“模型会调用、客户端接不住”的新问题。
 
-## 代理实现中还要注意什么
+## 代理的运行配置与协议处理
 
 ### 不要把关闭 TLS 校验写成默认方案
 
@@ -149,11 +147,9 @@ SSL: CERTIFICATE_VERIFY_FAILED
 - `Content-Length` 是否在改写 body 后重新计算；
 - 压缩请求是否先解压、改写，再正确编码。
 
-## 为什么没有直接使用现成代理
+## 现成代理的选择条件
 
-我也考虑过 CC Switch 一类本地路由工具。它们适合切换 endpoint、模型和密钥，但这次问题发生在请求体结构里，需要修改 `tools` 数组和具体字段。如果代理只做路由和鉴权替换，就无法解决 `namespace` 不兼容。
-
-选择现成工具时，需要确认它能否转换请求体，并同时处理流式响应与工具调用名称映射。仅支持 endpoint、模型和密钥切换无法解决这个问题。
+我也考虑过 CC Switch 一类本地路由工具。这次需要转换 `tools` 数组，因此选用现成代理时，要确认它支持请求体改写、流式响应及工具调用名称映射；仅切换 endpoint、模型和密钥不足以解决问题。
 
 ## 如何确认遇到的是同一个问题
 
@@ -167,11 +163,5 @@ SSL: CERTIFICATE_VERIFY_FAILED
 4. 网关文档只声明支持标准 `function` 工具。
 
 如果一次性任务已经能通过 `codex exec` 完成，它也是一个很实用的临时绕行方案：不需要代理，也不会牺牲额外工具。但它不能替代 Desktop 的完整交互体验。
-
-## 总结
-
-`unknown tool type: namespace` 发生在模型推理之前，是 Codex 客户端与第三方兼容网关之间的工具协议不匹配。在我当时的环境里，Codex 根据 `originator` 选择工具组织方式：Desktop 和交互式 CLI 发出 `namespace`，SDK 可能发出 `custom`，而 `codex exec` 发出标准 `function`。网关只支持 `function`，因此直接拒绝了前两类请求。
-
-一次性任务可以暂时改用 `codex exec`；SDK 可以尝试内部的 originator override，但不应把它当作稳定接口；Desktop 则需要使用支持这些工具类型的网关，或增加请求转换代理。直接移除 `namespace` 最简单，但对应工具会不可用；如果展开并保留工具，还必须同时处理返回调用的名称映射。
 
 以上行为来自当时使用的 Codex 版本和第三方网关。客户端或接口升级后，字段和行为都可能变化，仍应以实际请求为准。
