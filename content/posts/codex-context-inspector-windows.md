@@ -5,6 +5,10 @@ draft: false
 description: "为 Codex Desktop 提供 Windows 和 macOS 原生悬浮 Context Inspector，展示当前 Context 用量，并估算 Skill、MCP 工具和对话内容的占用。"
 tags: ["Codex", "Context", "Windows", "macOS", "插件", "WPF", "AppKit"]
 categories: ["技术"]
+cover:
+  image: "/images/covers/codex-context-inspector-windows.png"
+  alt: "悬浮仪表盘展示上下文用量与分类"
+  relative: false
 ---
 
 长时间使用 Codex Desktop 处理一个任务时，系统指令、Skill、MCP 工具定义、对话历史和工具结果会逐渐占用 Context。一个使用百分比能告诉我窗口还剩多少空间，但无法解释这些空间主要用在了哪里。

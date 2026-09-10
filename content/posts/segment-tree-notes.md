@@ -4,6 +4,10 @@ date: 2026-06-02T09:15:27+08:00
 draft: false
 tags: ["算法", "线段树", "Java", "数据结构"]
 categories: ["技术"]
+cover:
+  image: "/images/covers/segment-tree-notes.png"
+  alt: "区间数组与分层线段树"
+  relative: false
 ---
 
 线段树是常用的区间数据结构。第一次学习时，容易被递归建树、区间拆分和下标映射这些细节绕住。实现主要包含三件事：建树、查询、修改。

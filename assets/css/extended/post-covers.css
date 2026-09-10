@@ -1,0 +1,14 @@
+.home-post-card__cover {
+  display: block;
+  overflow: hidden;
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+
+.home-post-card__cover img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}

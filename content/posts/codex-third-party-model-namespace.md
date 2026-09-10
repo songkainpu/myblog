@@ -6,8 +6,8 @@ description: "解释 Codex Desktop 接入第三方模型时 namespace/custom 工
 tags: ["Codex", "DeepSeek", "LLM", "代理", "排障"]
 categories: ["技术"]
 cover:
-  image: "/images/posts/codex-third-party-model-namespace/cover.png"
-  alt: "Codex 请求经过本地代理转换后发往第三方模型"
+  image: "/images/covers/codex-third-party-model-namespace.png"
+  alt: "代理桥接并转换模型工具请求"
   relative: false
 ---
 

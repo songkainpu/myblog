@@ -5,6 +5,10 @@ draft: false
 description: "从 MySQL Group Commit、Binlog Dump 与 InnoDB engine commit 的执行顺序，解释 Canal 已收到完整事务、主库却短暂查不到数据的可见性窗口。"
 tags: ["MySQL", "Canal", "Binlog", "InnoDB", "CDC"]
 categories: ["技术"]
+cover:
+  image: "/images/covers/mysql-binlog-canal-visibility-window.png"
+  alt: "Binlog 事件与事务可见性之间的时间窗口"
+  relative: false
 ---
 
 

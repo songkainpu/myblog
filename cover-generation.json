@@ -1,0 +1,75 @@
+{
+  "mode": "built-in image_gen",
+  "covers": [
+    {
+      "slug": "ai-agent-out-of-browser-unified-ui-automation",
+      "alt": "统一接口连接手机、浏览器与游戏应用",
+      "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: A central agent orchestration hub connects a smartphone, tablet, browser window and a small three-dimensional game world, conveying unified UI control across mobile and game platforms.",
+      "source": "C:\\Users\\kai.song05\\.codex\\generated_images\\01a08a04-7896-7e33-b4aa-e509b9103b22\\exec-5b910d6c-abbc-44fa-9287-abd59a0781ec.png",
+      "file": "/images/covers/ai-agent-out-of-browser-unified-ui-automation.png"
+    },
+    {
+      "slug": "ai-llm-ui-automation-three-approaches",
+      "alt": "视觉、知识库与对象树三种 AI 自动化方案",
+      "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: Three complementary approaches to AI interface testing: an eye examining a screen, a library of knowledge cards, and a branching DOM object tree, arranged as three balanced interconnected stations.",
+      "source": "C:\\Users\\kai.song05\\.codex\\generated_images\\01a08a04-7896-7e33-b4aa-e509b9103b22\\exec-6f201332-64a8-4226-927b-c2f69aac350b.png",
+      "file": "/images/covers/ai-llm-ui-automation-three-approaches.png"
+    },
+    {
+      "slug": "cloudfront-cloudflare-geo-headers-security",
+      "alt": "CDN 全球网络与源站可信访问防护",
+      "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: A globe of edge network nodes routes trusted packets through a protective shield into an origin server; a separate untrusted route stops outside the shield.",
+      "source": "C:\\Users\\kai.song05\\.codex\\generated_images\\01a08a04-7896-7e33-b4aa-e509b9103b22\\exec-2534e519-1479-4278-9837-ec41ab2aca26.png",
+      "file": "/images/covers/cloudfront-cloudflare-geo-headers-security.png"
+    },
+    {
+      "slug": "codex-context-inspector-windows",
+      "alt": "悬浮仪表盘展示上下文用量与分类",
+      "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: A desktop app window with a floating context usage dashboard: elegant segmented circular gauge and stacked colored context layers, abstract code and conversation cards behind it.",
+      "source": "C:\\Users\\kai.song05\\.codex\\generated_images\\01a08a04-7896-7e33-b4aa-e509b9103b22\\exec-a106e390-0ed0-4dea-bef8-750e49164308.png",
+      "file": "/images/covers/codex-context-inspector-windows.png"
+    },
+    {
+      "slug": "codex-third-party-model-namespace",
+      "alt": "代理桥接并转换模型工具请求",
+      "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: Incompatible geometric tool blocks from a code editor flow through a small adapter bridge and emerge as compatible blocks entering a model endpoint, visual metaphor for API tool schema translation.",
+      "source": "C:\\Users\\kai.song05\\.codex\\generated_images\\01a08a04-7896-7e33-b4aa-e509b9103b22\\exec-6143268c-f093-4240-8945-98ca19a6c111.png",
+      "file": "/images/covers/codex-third-party-model-namespace.png"
+    },
+    {
+      "slug": "go123-hologres-tls-kyber",
+      "alt": "跨地域 TLS 握手与大报文分段",
+      "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: Encrypted packets travel between distant cloud servers across a globe; an oversized handshake packet splits into two pieces at a narrow network gateway, a subtle lock motif conveys TLS.",
+      "source": "C:\\Users\\kai.song05\\.codex\\generated_images\\01a08a04-7896-7e33-b4aa-e509b9103b22\\exec-929edfb9-19a4-4055-a696-64ee28429cac.png",
+      "file": "/images/covers/go123-hologres-tls-kyber.png"
+    },
+    {
+      "slug": "hello-world",
+      "alt": "笔记本电脑与晨光中的博客写作桌",
+      "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: A welcoming writer developer desk with an open laptop showing an abstract new blog page, notebook and small plant, a rising sun beyond the window, quiet sense of beginning.",
+      "source": "C:\\Users\\kai.song05\\.codex\\generated_images\\01a08a04-7896-7e33-b4aa-e509b9103b22\\exec-5e41a5e7-adc5-439a-942b-af4df0fc442c.png",
+      "file": "/images/covers/hello-world.png"
+    },
+    {
+      "slug": "mysql-binlog-canal-visibility-window",
+      "alt": "Binlog 事件与事务可见性之间的时间窗口",
+      "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: A database cylinder feeding two parallel tracks: a fast luminous event stream reaches a consumer first, while a second transaction track passes through a small hourglass before a visible data window opens, race timing visual metaphor.",
+      "source": "C:\\Users\\kai.song05\\.codex\\generated_images\\01a08a04-7896-7e33-b4aa-e509b9103b22\\exec-1c1c6fc7-edd0-4054-a5e5-e732a20a4688.png",
+      "file": "/images/covers/mysql-binlog-canal-visibility-window.png"
+    },
+    {
+      "slug": "segment-tree-notes",
+      "alt": "区间数组与分层线段树",
+      "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: An elegant balanced binary tree made of connected rectangular interval blocks, four ordered array tiles underneath, a single selected range highlighted through matching parent nodes, conceptual segment tree.",
+      "source": "C:\\Users\\kai.song05\\.codex\\generated_images\\01a08a04-7896-7e33-b4aa-e509b9103b22\\exec-7e016496-e6c6-4a68-a0fe-1f44a76eeed3.png",
+      "file": "/images/covers/segment-tree-notes.png"
+    },
+    {
+      "slug": "ssr-state-viewer-bookmarklet",
+      "alt": "书签工具展开浏览器中的 JSON 状态树",
+      "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: A browser window with a highlighted bookmark ribbon opens a floating inspector panel, revealing an elegant expandable nested JSON tree and a magnifying glass, abstract interface with no readable text.",
+      "source": "C:\\Users\\kai.song05\\.codex\\generated_images\\01a08a04-7896-7e33-b4aa-e509b9103b22\\exec-6346d67f-72de-44c3-9335-6e108b3ba102.png",
+      "file": "/images/covers/ssr-state-viewer-bookmarklet.png"
+    }
+  ]
+}

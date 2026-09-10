@@ -77,6 +77,11 @@
     <div class="home-post-grid">
       {{ range $index, $page := $latestPosts }}
       <article class="home-post-card{{ if eq $index 0 }} home-post-card--featured{{ end }}">
+        {{ with $page.Params.cover }}
+        <a class="home-post-card__cover" href="{{ $page.RelPermalink }}" aria-label="{{ $page.Title }}">
+          <img src="{{ .image | relURL }}" alt="{{ .alt }}" loading="lazy" width="1672" height="941">
+        </a>
+        {{ end }}
         <div class="home-post-card__meta">
           <span>{{ $page.Date.Format "2006-01-02" }}</span>
           <span>{{ $page.ReadingTime }} 分钟</span>

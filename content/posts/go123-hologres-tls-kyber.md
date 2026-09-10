@@ -5,6 +5,10 @@ draft: false
 description: "同样连接新加坡的 Hologres，AWS 新加坡正常，美国和欧洲却 SSL 失败。最后发现，问题和 Go 1.23 默认开启的 Kyber 有关。"
 tags: ["Go", "TLS", "Hologres", "AWS", "网络排查"]
 categories: ["技术"]
+cover:
+  image: "/images/covers/go123-hologres-tls-kyber.png"
+  alt: "跨地域 TLS 握手与大报文分段"
+  relative: false
 ---
 
 之前升级 Go 1.23，遇到过一个 Hologres 连接问题。

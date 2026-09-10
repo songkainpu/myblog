@@ -4,6 +4,10 @@ date: 2026-04-24T01:50:00+08:00
 draft: false
 tags: ["生活", "博客"]
 categories: ["随笔"]
+cover:
+  image: "/images/covers/hello-world.png"
+  alt: "笔记本电脑与晨光中的博客写作桌"
+  relative: false
 ---
 
 这是我用 **Hugo + PaperMod + Cloudflare Pages** 搭建的个人博客的第一篇文章。

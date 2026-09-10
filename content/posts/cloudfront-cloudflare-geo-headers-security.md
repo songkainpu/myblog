@@ -4,6 +4,10 @@ date: 2026-05-01T02:04:57+08:00
 draft: false
 tags: ["CloudFront", "Cloudflare", "CDN", "安全", "GeoIP"]
 categories: ["技术"]
+cover:
+  image: "/images/covers/cloudfront-cloudflare-geo-headers-security.png"
+  alt: "CDN 全球网络与源站可信访问防护"
+  relative: false
 ---
 
 最近排查了一个和 CDN 回源 Header 有关的问题：源站经常会依赖 CDN 写入的 IP / GeoIP Header 来判断用户真实 IP 或国家地区，例如 Cloudflare 的 `CF-Connecting-IP`、`CF-IPCountry`，以及 AWS CloudFront 的 `CloudFront-Viewer-Address`、`CloudFront-Viewer-Country`。

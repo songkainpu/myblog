@@ -4,6 +4,10 @@ date: 2026-05-01T02:22:33+08:00
 draft: false
 tags: ["AI", "LLM", "自动化测试", "UI 自动化"]
 categories: ["技术"]
+cover:
+  image: "/images/covers/ai-llm-ui-automation-three-approaches.png"
+  alt: "视觉、知识库与对象树三种 AI 自动化方案"
+  relative: false
 ---
 
 AI / LLM 在 UI 自动化测试中的常见用法可以分为三类：

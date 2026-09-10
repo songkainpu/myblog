@@ -4,6 +4,10 @@ date: 2026-06-16T20:18:45+08:00
 draft: false
 tags: ["AI", "Agent", "MCP", "UI 自动化", "Android", "iOS", "Unity"]
 categories: ["技术"]
+cover:
+  image: "/images/covers/ai-agent-out-of-browser-unified-ui-automation.png"
+  alt: "统一接口连接手机、浏览器与游戏应用"
+  relative: false
 ---
 
 在建设全自动化的 AI Native 需求产出流程时，我们遇到了一个很现实的问题：

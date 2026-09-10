@@ -5,6 +5,10 @@ draft: false
 description: "用一个可配置的 Bookmarklet，读取 SSR 注入的全局对象或 JSON Script，并转换为可折叠、可搜索、可复制的 JSON 树。"
 tags: ["SSR", "Bookmarklet", "JavaScript", "Vue", "前端调试"]
 categories: ["技术"]
+cover:
+  image: "/images/covers/ssr-state-viewer-bookmarklet.png"
+  alt: "书签工具展开浏览器中的 JSON 状态树"
+  relative: false
 ---
 
 SSR 页面常把首屏请求结果随 HTML 注入浏览器。为了减少反复打开 Console、查找状态位置和手动输入命令的操作，可以把检查脚本存成 Bookmarklet（书签脚本）：点击书签，直接在当前页面展开一棵可搜索、可复制的 JSON 树。
