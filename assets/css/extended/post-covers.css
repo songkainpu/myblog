@@ -1,6 +1,6 @@
 .home-post-card:has(.home-post-card__cover),
 .post-entry:has(.entry-cover),
-.post-single:has(> .entry-cover) {
+.post-header:has(> .entry-cover) {
   --cover-width: 120px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--cover-width);
@@ -8,16 +8,33 @@
   align-content: start;
 }
 
-.home-post-card:has(.home-post-card__cover) > :not(.home-post-card__cover),
-.post-entry:has(.entry-cover) > :not(.entry-cover):not(.entry-link) {
-  grid-column: 1;
+.home-post-card:has(.home-post-card__cover) > *,
+.post-entry:has(.entry-cover) > :not(.entry-link),
+.post-header:has(> .entry-cover) > * {
+  grid-column: 1 / -1;
   min-width: 0;
 }
 
-.home-post-card__cover,
-.post-entry > .entry-cover {
+.home-post-card:has(.home-post-card__cover) > .home-post-card__title {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.post-entry:has(.entry-cover) > .entry-header {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.post-header:has(> .entry-cover) > .post-title {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.home-post-card > .home-post-card__cover,
+.post-entry:has(.entry-cover) > .entry-cover,
+.post-header > .entry-cover {
   grid-column: 2;
-  grid-row: 1 / span 4;
+  grid-row: 1;
   align-self: start;
   display: block;
   width: var(--cover-width);
@@ -26,9 +43,14 @@
   border-radius: 10px;
 }
 
+.home-post-card > .home-post-card__cover,
+.post-header > .entry-cover {
+  grid-row: 2;
+}
+
 .home-post-card__cover img,
 .post-entry > .entry-cover img,
-.post-single > .entry-cover img {
+.post-header > .entry-cover img {
   display: block;
   width: 100%;
   height: auto;
@@ -37,28 +59,10 @@
   border-radius: 10px;
 }
 
-.post-single:has(> .entry-cover) > * {
-  grid-column: 1 / -1;
-  min-width: 0;
-}
-
-.post-single:has(> .entry-cover) > .post-header {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.post-single:has(> .entry-cover) > .entry-cover {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: start;
-  width: var(--cover-width);
-  margin: 24px 0 0;
-}
-
 @media (max-width: 640px) {
   .home-post-card:has(.home-post-card__cover),
   .post-entry:has(.entry-cover),
-  .post-single:has(> .entry-cover) {
+  .post-header:has(> .entry-cover) {
     --cover-width: 88px;
     column-gap: 12px;
   }
