@@ -5,6 +5,10 @@ draft: false
 description: "一次 Redis 升级经历：旧进程正常，重启后约 40 QPS 就出现超时，升级 go-redis v8 后恢复。结合 COMMAND 响应变化与客户端缓存源码，分析这个延迟暴露的兼容问题。"
 tags: ["Redis", "Go", "go-redis", "性能排查", "版本升级"]
 categories: ["技术"]
+cover:
+  image: "/images/covers/redis6-go-redis-cache-after-restart.png"
+  alt: "Redis 升级后应用重启触发命令缓存格式不兼容与请求排队"
+  relative: false
 ---
 
 之前把 Redis 从 4 升级到 6，遇到过一个有点反直觉的问题。

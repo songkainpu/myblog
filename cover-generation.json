@@ -70,6 +70,13 @@
       "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: A browser window with a highlighted bookmark ribbon opens a floating inspector panel, revealing an elegant expandable nested JSON tree and a magnifying glass, abstract interface with no readable text.",
       "source": "C:\\Users\\kai.song05\\.codex\\generated_images\\01a08a04-7896-7e33-b4aa-e509b9103b22\\exec-6346d67f-72de-44c3-9335-6e108b3ba102.png",
       "file": "/images/covers/ssr-state-viewer-bookmarklet.png"
+    },
+    {
+      "slug": "redis6-go-redis-cache-after-restart",
+      "alt": "Redis 升级后应用重启触发命令缓存格式不兼容与请求排队",
+      "prompt": "Use case: stylized-concept. Asset type: technical personal blog cover, landscape 16:9. Create a polished editorial illustration with tactile paper and subtle dimensional geometry, warm off-white background, dark ink outlines, restrained teal and amber accents, generous whitespace, clear strong central composition that stays legible as a thumbnail. No text, letters, numbers, logos, watermark or frame. Topic: Redis server upgrade exposes an old Go client's cached command metadata incompatibility after application restart. Depict a database cylinder connected to a small application window containing a tidy stack of cached cards; a circular restart arrow leads to an incompatible extra geometric block at a narrow adapter, with a small hourglass and queued request tiles. Elegant simple conceptual cover, not a detailed technical diagram.",
+      "source": "/Users/kaisong/.codex/generated_images/01a0967d-bf67-7383-a4a7-f019f678cdb9/exec-dd10dc92-f66d-46d0-b5bb-92dd31d457e0.png",
+      "file": "/images/covers/redis6-go-redis-cache-after-restart.png"
     }
   ]
 }
