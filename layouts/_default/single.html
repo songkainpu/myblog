@@ -43,6 +43,14 @@
   {{- end }}
 
   <footer class="post-footer">
+    <aside class="wechat-follow" aria-labelledby="wechat-follow-title">
+      <div class="wechat-follow__copy">
+        <p class="wechat-follow__eyebrow">同步更新</p>
+        <h2 id="wechat-follow-title">在微信公众号继续阅读</h2>
+        <p>文章也会同步发布到公众号。扫码关注，不错过后续更新。</p>
+      </div>
+      <img class="wechat-follow__qr" src="{{ "images/wechat-official-account-qr.jpg" | absURL }}" width="430" height="430" alt="微信公众号二维码，扫码关注" loading="lazy">
+    </aside>
     {{- $tags := .Language.Params.Taxonomies.tag | default "tags" }}
     <ul class="post-tags">
       {{- range ($.GetTerms $tags) }}
