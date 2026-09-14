@@ -36,31 +36,14 @@
         </div>
       </div>
 
-      <aside class="home-hero__panel">
-        <p class="home-panel__label">写作重点</p>
-        <div class="home-focus-list">
-          <article class="home-focus-card">
-            <span class="home-focus-card__index">01</span>
-            <div>
-              <h2>Canal 明明收到了 Binlog，为什么主库还查不到数据？</h2>
-              <p>从 MySQL 提交链路解释 Binlog 已可读取、数据却尚未可见的时间窗口。</p>
-            </div>
-          </article>
-          <article class="home-focus-card">
-            <span class="home-focus-card__index">02</span>
-            <div>
-              <h2>AI + LLM 自动化测试</h2>
-              <p>视觉、RAG、DOM / 对象树三种思路的边界和组合方式。</p>
-            </div>
-          </article>
-          <article class="home-focus-card">
-            <span class="home-focus-card__index">03</span>
-            <div>
-              <h2>我给 Codex Desktop 做了一个 Context Inspector</h2>
-              <p>把上下文消耗拆开看清楚，定位消息、工具和 Skill 各自占用了多少空间。</p>
-            </div>
-          </article>
+      <aside class="home-hero__panel home-wechat-follow" aria-labelledby="home-wechat-follow-title">
+        <div class="home-wechat-follow__copy">
+          <p class="home-panel__label">微信公众号</p>
+          <h2 id="home-wechat-follow-title" class="home-wechat-follow__title">扫码关注，一起交流</h2>
+          <p>博客文章同步更新，关注公众号，不错过新文章。</p>
         </div>
+        <img class="home-wechat-follow__qr" src="{{ "images/wechat-official-account-qr.jpg" | relURL }}" width="430" height="430" alt="微信公众号二维码，使用微信扫码关注">
+        <p class="home-wechat-follow__hint">微信扫一扫，或长按识别二维码</p>
       </aside>
     </div>
   </section>
