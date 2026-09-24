@@ -1,0 +1,13 @@
+flowchart TB
+    subgraph connection[连接认证]
+        A[新建连接] --> B[AUTH：配置认证时] --> C[已认证连接]
+    end
+    subgraph metadata[客户端元数据缓存]
+        D[COMMAND] --> E[命令规则缓存]
+        F[CLUSTER SLOTS] --> G[槽位拓扑缓存]
+    end
+    subgraph routing[请求路由]
+        H[请求] --> I[提取 key] --> J[本地计算槽位] --> K[选择节点] --> L[Redis 节点]
+    end
+    E -.提供 key 位置.-> I
+    G -.提供槽位与节点映射.-> K

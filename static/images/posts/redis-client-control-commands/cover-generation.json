@@ -1,0 +1,5 @@
+{
+  "mode": "built-in image_gen",
+  "prompt": "Use case: stylized-concept. Create an editorial COVER illustration for a software engineering blog about Go and Redis connections and clusters. Landscape 16:9, contemporary premium technology magazine visual. A friendly small teal Go gopher sits beside an elegant open laptop, looking toward a sculptural cluster of three glossy red database cylinders arranged on a clean white studio surface. Subtle teal light reflections, soft studio shadows, a few small abstract geometric blocks suggest software. Strong beautiful balanced composition, generous negative space, modern crisp 3D illustration, white/light-gray background, teal and Redis red color palette. This is an atmospheric cover, NOT a technical diagram: absolutely NO arrows, NO flowchart, NO boxes containing text, NO command labels, NO connection lines, NO charts, NO words or letters, NO watermark. No Chinese style or any traditional/cultural imagery, no mountains, trees, gates, paper textures, ornaments. Main subjects large and recognizable at thumbnail size. Simple, tasteful, polished.",
+  "file": "cover.png"
+}

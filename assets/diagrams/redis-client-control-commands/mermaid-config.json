@@ -1,0 +1,19 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "PingFang SC, sans-serif",
+    "fontSize": "18px",
+    "primaryColor": "#edf7f7",
+    "primaryTextColor": "#22333d",
+    "primaryBorderColor": "#378489",
+    "lineColor": "#607580",
+    "clusterBkg": "#fafcfc",
+    "clusterBorder": "#dce5e7"
+  },
+  "flowchart": {
+    "htmlLabels": false,
+    "curve": "linear",
+    "nodeSpacing": 30,
+    "rankSpacing": 45
+  }
+}
