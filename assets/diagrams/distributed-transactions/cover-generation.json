@@ -1,0 +1,5 @@
+{
+  "tool": "built-in image_gen",
+  "asset": "static/images/covers/distributed-transactions.png",
+  "prompt": "Use case: stylized-concept. Create a polished wide landscape 16:9 editorial cover illustration for a Chinese engineering blog article about distributed transactions. Three distinct sculptural database/server modules connected by elegant luminous paths, representing order, inventory and payment with simple document, box and coin pictograms. A central coordination ring conveys reliable collaboration and recovery. Refined isometric 3D illustration, deep navy backdrop, cyan and warm amber accents, subtle materials, crisp focal shapes and restrained lighting. Strong readable silhouette at thumbnail size, generous breathing room, no text, no lettering, no logos, no watermark. Conceptual cover, not a technical protocol diagram."
+}
