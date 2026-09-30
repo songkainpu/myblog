@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant C as 协调者
+    participant A as 资源A
+    participant B as 资源B
+    C->>A: Prepare
+    C->>B: Prepare
+    A-->>C: Yes，准备状态已持久化
+    B-->>C: Yes，准备状态已持久化
+    Note over C: 持久化 COMMIT 决定
+    C->>A: Commit
+    A-->>C: 已提交
+    C--xB: Commit 通知丢失
+    Note over B: 保留准备状态，不能自行回滚
+    C->>B: 恢复后重发 Commit
+    B-->>C: 已提交
+

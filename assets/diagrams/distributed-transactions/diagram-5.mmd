@@ -1,0 +1,18 @@
+flowchart TD
+    subgraph T1[订单库本地事务]
+      O[订单记录]
+      E[Outbox 事件]
+    end
+    E --> R[轮询投递器或 CDC]
+    R --> K[消息系统]
+    K --> C[库存消费者]
+    subgraph T2[库存库本地事务]
+      D[去重记录]
+      I[库存修改]
+      X[结果 Outbox]
+    end
+    C --> D
+    D --> I --> X
+    X --> N[向后续步骤投递]
+
+

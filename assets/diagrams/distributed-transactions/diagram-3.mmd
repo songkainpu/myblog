@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> NEW
+    NEW --> RESERVED: Try 成功
+    NEW --> CANCELLED: Cancel 先到，记录取消
+    RESERVED --> CONFIRMED: Confirm
+    RESERVED --> CANCELLED: Cancel
+    CONFIRMED --> CONFIRMED: 重复 Confirm，无副作用
+    CANCELLED --> CANCELLED: 重复 Cancel 或迟到 Try
+
