@@ -1,0 +1,5 @@
+{
+  "tool": "built-in image_gen",
+  "asset": "static/images/covers/distributed-transactions-simple.png",
+  "prompt": "Create a minimalist editorial blog cover about distributed transactions, wide landscape 16:9. Extremely simple flat graphic illustration on a solid warm off-white background. Exactly three medium-sized rounded square tiles arranged horizontally in the center, joined by two thin straight lines. The tiles contain respectively a simple document outline icon, a simple box outline icon, and a simple coin outline icon, representing order, inventory, payment. Use dark navy linework and one muted teal accent. Plenty of empty space, very limited shapes, consistent stroke widths, understated professional technical publication aesthetic. No text, no labels, no letters, no numbers. No servers, no extra nodes, no central hub, no scenery, no glow, no gradients, no 3D, no shadows, no decorative details, no watermark."
+}
