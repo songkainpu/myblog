@@ -6,7 +6,7 @@ description: "用下单、库存与支付讲清 2PC、TCC、Saga 和 Outbox，�
 tags: ["分布式事务", "数据库", "Seata", "Saga", "性能"]
 categories: ["技术"]
 cover:
-  image: "/images/covers/distributed-transactions-simple.png"
+  image: "/images/covers/distributed-transactions-coordination.png"
   alt: "订单、库存与支付通过协调机制协作的分布式事务概念图"
   relative: false
 ---
